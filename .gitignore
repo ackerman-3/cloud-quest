@@ -1,0 +1,7 @@
+node_modules
+dist
+dist-single
+*.bak
+unused/
+*.log
+.DS_Store
