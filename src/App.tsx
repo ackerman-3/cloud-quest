@@ -119,6 +119,11 @@ export default function App() {
       session={session}
       onStart={start}
       onResume={() => session && setView({ v: 'play', id: session.projectId, resume: session })}
+      onReset={() => {
+        saveSession(null)
+        setSession(null)
+        setProgress({ version: 1, completions: [], dailyGoal: progress.dailyGoal })
+      }}
     />
   )
 }

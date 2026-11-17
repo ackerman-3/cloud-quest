@@ -51,16 +51,19 @@ export function Home({
   session,
   onStart,
   onResume,
+  onReset,
 }: {
   progress: Progress
   setProgress: (p: Progress) => void
   session: Session | null
   onStart: (id: string) => void
   onResume: () => void
+  onReset: () => void
 }) {
   const [tab, setTab] = useState<1 | 2 | 3>(unlockedLevel(progress))
   const [showBackup, setShowBackup] = useState(false)
   const [msg, setMsg] = useState<string | null>(null)
+  const [askReset, setAskReset] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
   const unlocked = unlockedLevel(progress)
   const tCount = todayCount(progress)
@@ -297,6 +300,34 @@ export function Home({
                 e.target.value = ''
               }}
             />
+            <div className="reset-box">
+              {!askReset ? (
+                <button className="danger" onClick={() => setAskReset(true)}>
+                  🗑 학습 기록 초기화
+                </button>
+              ) : (
+                <div className="reset-confirm">
+                  <b>모든 학습 기록을 지울까요?</b>
+                  <p>
+                    완료 내역 {progress.completions.length}건, 별점, 학습 달력, 승급 상태, 진행 중인 프로젝트가 모두 지워지고 되돌릴 수 없어요. 하루 목표 설정은 유지돼요. 필요하면 먼저 백업하세요.
+                  </p>
+                  <div className="row-wrap">
+                    <button onClick={() => setAskReset(false)}>취소</button>
+                    <button
+                      className="danger"
+                      onClick={() => {
+                        onReset()
+                        setAskReset(false)
+                        setTab(1)
+                        setMsg('학습 기록을 초기화했어요.')
+                      }}
+                    >
+                      초기화
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
             <ul className="notes">
               <li>기록은 이 기기·이 브라우저의 저장소(localStorage)에 저장돼요. 서버에는 저장되지 않아요.</li>
               <li>홈 화면 아이콘을 삭제하면 기록도 함께 지워져요. 삭제 전에 꼭 백업하세요.</li>

@@ -1411,3 +1411,20 @@ details summary {
 .designer.simming {
   padding-bottom: 64vh;
 }
+
+.reset-box {
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+}
+.reset-confirm {
+  background: #fdf0f0;
+  border: 1px solid #f0c4c4;
+  border-radius: 10px;
+  padding: 12px;
+  font-size: 14px;
+}
+.reset-confirm p {
+  margin: 6px 0 10px;
+  line-height: 1.6;
+  color: #6b2a2a;
+}
