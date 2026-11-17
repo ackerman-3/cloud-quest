@@ -48,6 +48,23 @@ export const SERVICES: Record<string, Service> = Object.fromEntries(
       { id: 'apigw', name: 'API Gateway', short: 'API', cat: 'integration', scope: 'region', desc: 'API 요청을 받아 백엔드로 전달', cost: 0 },
       { id: 'sqs', name: 'SQS', short: 'SQS', cat: 'integration', scope: 'region', desc: '메시지를 저장해 두는 대기열(큐)', cost: 0 },
       { id: 'sns', name: 'SNS', short: 'SNS', cat: 'integration', scope: 'region', desc: '메시지를 구독자에게 즉시 발행(푸시)', cost: 0 },
+      // 추가 서비스
+      { id: 'acm', name: 'ACM 인증서', short: 'ACM', cat: 'security', scope: 'edge', desc: 'HTTPS용 SSL/TLS 인증서 발급·자동 갱신', cost: 0 },
+      { id: 'ssm', name: 'Systems Manager (Session Manager)', short: 'SSM', cat: 'integration', scope: 'region', desc: '포트를 열지 않고 서버에 접속, 접속 기록 남김', cost: 0 },
+      { id: 'firehose', name: 'Amazon Data Firehose', short: 'FH', cat: 'integration', scope: 'region', desc: '스트리밍 데이터를 S3 등에 자동 적재', cost: 1 },
+      { id: 'athena', name: 'Athena', short: 'ATH', cat: 'database', scope: 'region', desc: 'S3의 파일을 SQL로 바로 조회(서버리스)', cost: 0 },
+      { id: 'glue', name: 'Glue 데이터 카탈로그', short: 'GLUE', cat: 'database', scope: 'region', desc: '데이터 위치·형식(테이블 정의) 관리', cost: 0 },
+      { id: 'efs', name: 'EFS', short: 'EFS', cat: 'storage', scope: 'region', desc: '여러 서버가 함께 쓰는 공유 파일 시스템(NFS)', cost: 1 },
+      { id: 'ebs', name: 'EBS 볼륨', short: 'EBS', cat: 'storage', scope: 'subnet', desc: 'EC2 한 대에 붙는 블록 디스크(AZ 단위)', cost: 1 },
+      { id: 'cognito', name: 'Cognito 사용자 풀', short: 'COG', cat: 'security', scope: 'region', desc: '회원가입·로그인·토큰 발급', cost: 0 },
+      { id: 'dms', name: 'DMS 복제 인스턴스', short: 'DMS', cat: 'database', scope: 'subnet', desc: 'DB를 옮기며 변경분을 계속 복제(CDC)', cost: 2 },
+      { id: 'aurora', name: 'Aurora PostgreSQL', short: 'AUR', cat: 'database', scope: 'subnet', desc: 'AWS 관리형 고성능 관계형 DB', cost: 2 },
+      { id: 'tgw', name: 'Transit Gateway', short: 'TGW', cat: 'network', scope: 'link', desc: '여러 VPC·VPN을 한 곳에서 연결하는 허브', cost: 2 },
+      { id: 'peering', name: 'VPC 피어링', short: 'PCX', cat: 'network', scope: 'link', desc: 'VPC 두 개를 1:1로 연결', cost: 0 },
+      { id: 'fargate', name: 'ECS 서비스 (Fargate)', short: 'ECS', cat: 'compute', scope: 'subnet', desc: '서버 관리 없이 컨테이너 실행', cost: 2 },
+      { id: 'ecr', name: 'ECR', short: 'ECR', cat: 'compute', scope: 'region', desc: '컨테이너 이미지 저장소', cost: 0 },
+      { id: 'secrets', name: 'Secrets Manager', short: 'SEC', cat: 'security', scope: 'region', desc: 'DB 비밀번호 등을 암호화 보관·자동 교체', cost: 0 },
+      { id: 'vpcB', name: 'VPC (다른 부서)', short: 'VPC', cat: 'network', scope: 'fixed', desc: '다른 부서 VPC', cost: 0 },
     ] as Service[]
   ).map((s) => [s.id, s]),
 )

@@ -24,4 +24,19 @@ export const CHARS: Record<string, CharCfg> = {
   edu: { name: '문재현', role: '런업에듀 인프라 리드', skin: S.b, hair: '#3a2620', hairStyle: 'swept', eye: '#5a3e2e', top: '#f4f1ea', jacket: '#b8643a', bottom: '#2f3540', shoes: '#3c2b20', sharp: true },
 }
 
-export const ME = { name: '나', role: '신입 컨설턴트' }
+// 추가 프로젝트 고객: 기존 외형을 재사용하고 이름·역할만 다르게
+const reuse = (from: string, name: string, role: string): CharCfg => ({ ...CHARS[from], name, role })
+Object.assign(CHARS, {
+  cafe: reuse('flower', '정하린', '카페 하린 사장'),
+  photo: reuse('survey', '송태오', '스냅로그 개발자'),
+  gym: reuse('settle', '권도형', '핏앤런 운영팀장'),
+  shop2: reuse('ticket', '김나연', '데일리박스 백엔드 리드'),
+  game: reuse('edu', '류현승', '픽셀아레나 데이터 엔지니어'),
+  media: reuse('design', '오지수', '웹진 플랫 편집 플랫폼 담당'),
+  app: reuse('fashion', '양서윤', '헬시핏 앱 PM'),
+  insure: reuse('publisher', '박종석', '한결손해보험 IT기획 부장'),
+  group: reuse('city', '서진혁', '그린에너지그룹 클라우드 CoE 리드'),
+  delivery: reuse('commerce', '장민재', '빠른식탁 플랫폼 CTO'),
+})
+
+export const ME = { name: '나', role: '신입 아키텍트' }

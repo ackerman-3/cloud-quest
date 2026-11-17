@@ -65,7 +65,11 @@ export function makeCtx(spec: DesignSpec, d: Design): Ctx {
     const viaStandby = (x: PNode, standby: PNode) =>
       standby.service === 'rdsStandby' &&
       [...(adj.get(x.id) ?? [])].some((y) => byId.get(y)?.service === 'rds')
-    return viaStandby(a, b) || viaStandby(b, a)
+    // Aurora 클러스터: 같은 클러스터(연결된 Aurora 인스턴스)는 클러스터 엔드포인트를 공유
+    const viaCluster = (x: PNode, y: PNode) =>
+      y.service === 'aurora' &&
+      [...(adj.get(x.id) ?? [])].some((z) => byId.get(z)?.service === 'aurora' && adj.get(z)?.has(y.id))
+    return viaStandby(a, b) || viaStandby(b, a) || viaCluster(a, b) || viaCluster(b, a)
   }
 
   const matches = (n: PNode, key: string) => {

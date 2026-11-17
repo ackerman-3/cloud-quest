@@ -59,7 +59,10 @@ export function Designer({ project, design, setDesign, peeked, onPeek, simRuns, 
   const place = (service: string, zoneId: string) => {
     const err = canPlace(service, zoneId)
     if (err) return say(err)
-    setDesign({ ...design, nodes: [...design.nodes, { id: newId(), service, zone: zoneId }] })
+    // 같은 서비스를 여러 개 두면 번호를 붙여 연결 목록에서 구분
+    const same = design.nodes.filter((n) => n.service === service).length
+    const label = same > 0 ? `${svc(service).name} ${same + 1}` : undefined
+    setDesign({ ...design, nodes: [...design.nodes, { id: newId(), service, zone: zoneId, label }] })
   }
 
   const move = (node: PNode, zoneId: string) => {

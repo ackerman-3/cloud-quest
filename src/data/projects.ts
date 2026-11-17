@@ -1,4 +1,5 @@
 import type { Box, Project, Result, Scope } from '../types'
+import { PROJECTS2 } from './projects2'
 
 // ── 작은 도우미 ─────────────────────────────────────────────
 const B = (id: string, kind: Box['kind'], label: string, children: Box[] = [], dir: 'row' | 'col' = 'col'): Box => ({
@@ -1804,10 +1805,10 @@ const p11: Project = {
   ],
 }
 
-export const PROJECTS: Project[] = [p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11]
+export const PROJECTS: Project[] = [p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, ...PROJECTS2]
 
 export const LEVELS = [
-  { level: 1 as const, name: '신입 컨설턴트', diff: '쉬움', need: 0 },
+  { level: 1 as const, name: '신입 아키텍트', diff: '쉬움', need: 0 },
   { level: 2 as const, name: '주니어 아키텍트', diff: '보통', need: 3 },
   { level: 3 as const, name: '시니어 아키텍트', diff: '어려움', need: 3 },
 ]
