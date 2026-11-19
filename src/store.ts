@@ -1,4 +1,5 @@
 import { PROJECTS, LEVELS } from './data/projects'
+import { ATTEND_GOLD, LEVEL_GOLD, REVIEW_RATE, STAR_BONUS } from './data/rewards'
 import type { Design } from './types'
 
 // ⚠️ 저장 키 이름과 형식을 바꾸면 기존 기록이 사라질 수 있습니다.
@@ -20,6 +21,20 @@ export interface Progress {
   completions: Completion[]
   dailyGoal: number
   lastBackup?: number
+  /** 출석한 날짜(YYYY-MM-DD). 하루 첫 접속마다 골드 지급 */
+  attendance?: string[]
+  /** 선물 기록. 골드 사용·호감도 계산의 근거 */
+  gifts?: GiftLog[]
+  /** 본 특별 에피소드 id */
+  seenEpisodes?: string[]
+}
+
+export interface GiftLog {
+  ts: number
+  to: string // 캐릭터 id
+  item: string // 선물 id
+  cost: number
+  points: number
 }
 
 export interface Session {
@@ -169,4 +184,48 @@ export function deleteCompletion(p: Progress, ts: number): Progress {
     return { ...c, counted, review }
   })
   return { ...p, completions }
+}
+
+// ── 골드·출석·선물 ──
+// 골드는 따로 저장하지 않고 기록(완료·출석·선물)에서 계산한다. 완료 기록을 지우면 그 보상도 함께 빠진다.
+
+/** 완료 기록 하나로 받은 골드. 같은 날 반복은 0, 다른 날 복습은 기본 골드 절반 */
+export function completionGold(c: Completion) {
+  if (!c.counted) return 0
+  const p = PROJECTS.find((x) => x.id === c.projectId)
+  if (!p) return 0
+  const base = LEVEL_GOLD[p.level]
+  return Math.round(base * (c.review ? REVIEW_RATE : 1)) + STAR_BONUS * Math.max(0, c.stars - 1)
+}
+
+export function goldEarned(p: Progress) {
+  return p.completions.reduce((s, c) => s + completionGold(c), 0) + (p.attendance?.length ?? 0) * ATTEND_GOLD
+}
+
+export function goldSpent(p: Progress) {
+  return (p.gifts ?? []).reduce((s, g) => s + g.cost, 0)
+}
+
+export function goldBalance(p: Progress) {
+  return Math.max(0, goldEarned(p) - goldSpent(p))
+}
+
+/** 오늘 처음 접속했으면 출석 기록을 더한 새 Progress, 이미 출석했으면 null */
+export function checkIn(p: Progress): Progress | null {
+  const d = today()
+  if (p.attendance?.includes(d)) return null
+  return { ...p, attendance: [...(p.attendance ?? []), d] }
+}
+
+export function affinity(p: Progress, charId: string) {
+  return (p.gifts ?? []).filter((g) => g.to === charId).reduce((s, g) => s + g.points, 0)
+}
+
+export function giveGift(p: Progress, to: string, item: string, cost: number, points: number): Progress {
+  return { ...p, gifts: [...(p.gifts ?? []), { ts: Date.now(), to, item, cost, points }] }
+}
+
+export function markEpisodeSeen(p: Progress, id: string): Progress {
+  if (p.seenEpisodes?.includes(id)) return p
+  return { ...p, seenEpisodes: [...(p.seenEpisodes ?? []), id] }
 }

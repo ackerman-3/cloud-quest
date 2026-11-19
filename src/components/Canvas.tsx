@@ -2,21 +2,41 @@ import { useLayoutEffect, useRef, useState } from 'react'
 import type { Box, Design, DesignSpec, PNode } from '../types'
 import { CAT_COLOR, svc } from '../data/services'
 import { allEdges, allNodes } from '../engine'
+import { Glyph } from './glyphs'
+
+// AWS 공식 아키텍처 아이콘(Architecture-Service-Icons_07312025, 48px). 파일 이름 = 서비스 id
+const AWS_ICONS = Object.fromEntries(
+  Object.entries(import.meta.glob('../assets/aws/*.svg', { eager: true, query: '?url', import: 'default' })).map(([k, v]) => [
+    k.split('/').pop()!.replace('.svg', ''),
+    v as string,
+  ]),
+)
+// 같은 서비스를 다른 역할로 쓰는 id
+const ICON_ALIAS: Record<string, string> = { ec2Web: 'ec2', ec2Worker: 'ec2', rdsStandby: 'rds', rdsReplica: 'rds' }
 
 export function SvcIcon({ id, size = 26 }: { id: string; size?: number }) {
   const s = svc(id)
   const emoji = /\p{Extended_Pictographic}/u.test(s.short)
+  const official = AWS_ICONS[ICON_ALIAS[id] ?? id]
+  if (official)
+    return (
+      <span className="svc-icon official" style={{ width: size, height: size }}>
+        <img src={official} alt="" draggable={false} />
+      </span>
+    )
+  const glyph = !emoji && <Glyph id={id} />
+  const c = CAT_COLOR[s.cat]
   return (
     <span
-      className="svc-icon"
+      className={`svc-icon ${emoji ? 'emoji' : ''}`}
       style={{
         width: size,
         height: size,
-        background: emoji ? '#eef2f7' : CAT_COLOR[s.cat],
-        fontSize: emoji ? size * 0.6 : s.short.length > 4 ? size * 0.26 : s.short.length > 3 ? size * 0.3 : size * 0.36,
+        background: emoji ? 'transparent' : c,
+        fontSize: emoji ? size * 0.8 : s.short.length > 4 ? size * 0.24 : s.short.length > 3 ? size * 0.28 : size * 0.34,
       }}
     >
-      {s.short}
+      {glyph || s.short}
     </span>
   )
 }
@@ -42,6 +62,13 @@ interface Props {
 interface Pt {
   x: number
   y: number
+  /** 아이콘 반 높이·반 너비, 노드(이름 포함) 위·아래 끝 */
+  ih?: number
+  iw?: number
+  top?: number
+  bottom?: number
+  left?: number
+  right?: number
 }
 
 export function Canvas(p: Props) {
@@ -58,7 +85,17 @@ export function Canvas(p: Props) {
       const next: Record<string, Pt> = {}
       el.querySelectorAll<HTMLElement>('[data-node]').forEach((n) => {
         const r = n.querySelector('.svc-icon')?.getBoundingClientRect() ?? n.getBoundingClientRect()
-        next[n.dataset.node!] = { x: r.left - base.left + r.width / 2, y: r.top - base.top + r.height / 2 }
+        const nr = n.getBoundingClientRect()
+        next[n.dataset.node!] = {
+          x: r.left - base.left + r.width / 2,
+          y: r.top - base.top + r.height / 2,
+          ih: r.height / 2,
+          iw: r.width / 2,
+          top: nr.top - base.top,
+          bottom: nr.bottom - base.top,
+          left: nr.left - base.left,
+          right: nr.right - base.left,
+        }
       })
       setPos(next)
     }
@@ -152,28 +189,10 @@ export function Canvas(p: Props) {
           const A0 = pos[a]
           const B0 = pos[b]
           if (!A0 || !B0) return null
-          // 부드러운 곡선: 세로로 더 멀면 위·아래로, 가로로 더 멀면 좌·우로 빠져나가게 하고 아이콘 가장자리에서 시작·끝낸다
-          const dx = B0.x - A0.x
-          const dy = B0.y - A0.y
-          const cut = 17
-          const vertical = Math.abs(dy) >= Math.abs(dx) * 0.6 && Math.abs(dy) > cut * 2 + 6
-          let d: string
-          let S: Pt
-          if (vertical) {
-            const sy = Math.sign(dy)
-            S = { x: A0.x, y: A0.y + sy * cut }
-            const E = { x: B0.x, y: B0.y - sy * cut }
-            const m = (E.y - S.y) / 2
-            d = `M${S.x},${S.y} C${S.x},${S.y + m} ${E.x},${E.y - m} ${E.x},${E.y}`
-          } else {
-            const len = Math.hypot(dx, dy) || 1
-            const ux = dx / len
-            const uy = dy / len
-            const cx = Math.min(Math.abs(dx), 60) * Math.sign(dx || 1)
-            S = { x: A0.x + ux * cut * 1.6, y: A0.y + uy * cut }
-            const E = { x: B0.x - ux * cut * 1.6, y: B0.y - uy * cut }
-            d = `M${S.x},${S.y} C${S.x + cx * 0.5},${S.y} ${E.x - cx * 0.5},${E.y} ${E.x},${E.y}`
-          }
+          // AWS 구성도처럼 꺾은선(직각)으로 잇고, 모서리는 살짝 둥글게
+          const pts = routeEdge(A0, B0, a, b, pos)
+          const S = pts[0]
+          const d = roundPath(pts, 7)
           const dead = p.dead?.has(a) || p.dead?.has(b)
           const hl = !p.flow && !!p.highlightNode && (a === p.highlightNode || b === p.highlightNode)
           const state = dead ? 'dead' : p.flow ? p.flow : hl ? 'hl' : 'base'
@@ -194,4 +213,95 @@ export function Canvas(p: Props) {
       </svg>
     </div>
   )
+}
+
+/** 꺾은선 꼭짓점을 반지름 r로 둥글게 */
+function roundPath(pts: Pt[], r: number) {
+  let d = `M${pts[0].x},${pts[0].y}`
+  for (let i = 1; i < pts.length - 1; i++) {
+    const p0 = pts[i - 1]
+    const p1 = pts[i]
+    const p2 = pts[i + 1]
+    const l1 = Math.hypot(p1.x - p0.x, p1.y - p0.y)
+    const l2 = Math.hypot(p2.x - p1.x, p2.y - p1.y)
+    const rr = Math.min(r, l1 / 2, l2 / 2)
+    const a = { x: p1.x - ((p1.x - p0.x) / (l1 || 1)) * rr, y: p1.y - ((p1.y - p0.y) / (l1 || 1)) * rr }
+    const b = { x: p1.x + ((p2.x - p1.x) / (l2 || 1)) * rr, y: p1.y + ((p2.y - p1.y) / (l2 || 1)) * rr }
+    d += ` L${a.x},${a.y} Q${p1.x},${p1.y} ${b.x},${b.y}`
+  }
+  const last = pts[pts.length - 1]
+  return d + ` L${last.x},${last.y}`
+}
+
+type Rect = { l: number; r: number; t: number; b: number }
+
+/** 선분(수평·수직)이 사각형을 지나가는지 */
+function hits(p: Pt, q: Pt, R: Rect) {
+  const l = Math.min(p.x, q.x)
+  const r = Math.max(p.x, q.x)
+  const t = Math.min(p.y, q.y)
+  const b = Math.max(p.y, q.y)
+  return l < R.r && r > R.l && t < R.b && b > R.t
+}
+
+/**
+ * 직각 꺾은선 경로 후보를 여러 개 만들고, 다른 서비스(아이콘·이름)를 가장 적게 가로지르는 경로를 고른다.
+ * 아래로 가면 이름 밑에서 출발해 아이콘 위로, 위로 가면 아이콘 위에서 출발해 이름 밑으로 들어간다.
+ */
+function routeEdge(A: Pt, B: Pt, aId: string, bId: string, pos: Record<string, Pt>): Pt[] {
+  const gap = 4
+  const ih = (P: Pt) => P.ih ?? 18
+  const iw = (P: Pt) => P.iw ?? 18
+  const obstacles: Rect[] = Object.entries(pos)
+    .filter(([id]) => id !== aId && id !== bId)
+    .map(([, P]) => ({ l: (P.left ?? P.x - 39) - 3, r: (P.right ?? P.x + 39) + 3, t: (P.top ?? P.y - 18) - 3, b: (P.bottom ?? P.y + 30) + 3 }))
+  const cost = (pts: Pt[]) => {
+    let n = 0
+    let len = 0
+    for (let i = 1; i < pts.length; i++) {
+      for (const R of obstacles) if (hits(pts[i - 1], pts[i], R)) n++
+      len += Math.abs(pts[i].x - pts[i - 1].x) + Math.abs(pts[i].y - pts[i - 1].y)
+    }
+    return n * 10000 + len + pts.length * 30
+  }
+  const simplify = (pts: Pt[]) =>
+    pts.filter((p, i) => i === 0 || i === pts.length - 1 || !(Math.abs(p.x - pts[i - 1].x) < 1 && Math.abs(p.y - pts[i - 1].y) < 1))
+
+  const dx = B.x - A.x
+  const dy = B.y - A.y
+  const cands: Pt[][] = []
+  if (Math.abs(dy) > 40) {
+    const down = dy > 0
+    const S = { x: A.x, y: down ? (A.bottom ?? A.y) + gap : A.y - ih(A) - gap }
+    const E = { x: B.x, y: down ? B.y - ih(B) - gap - 2 : (B.bottom ?? B.y) + gap + 2 }
+    const sy = down ? 1 : -1
+    for (const my of [(S.y + E.y) / 2, S.y + sy * 10, E.y - sy * 12]) {
+      cands.push(Math.abs(S.x - E.x) < 3 ? [S, E] : [S, { x: S.x, y: my }, { x: E.x, y: my }, E])
+    }
+    // 옆으로 빠져 내려가는 경로(중간 서비스를 비켜 감)
+    for (const side of [1, -1]) {
+      const S2 = { x: A.x + side * (iw(A) + gap), y: A.y }
+      for (const off of [12, 24]) {
+        const cx = side > 0 ? (A.right ?? A.x + 39) + off : (A.left ?? A.x - 39) - off
+        cands.push([S2, { x: cx, y: S2.y }, { x: cx, y: E.y - sy * 12 }, { x: E.x, y: E.y - sy * 12 }, E])
+      }
+    }
+  }
+  {
+    const sx = Math.sign(dx || 1)
+    const S = { x: A.x + sx * (iw(A) + gap), y: A.y }
+    const E = { x: B.x - sx * (iw(B) + gap + 2), y: B.y }
+    const mx = (S.x + E.x) / 2
+    cands.push(Math.abs(S.y - E.y) < 3 ? [S, { x: E.x, y: S.y }] : [S, { x: mx, y: S.y }, { x: mx, y: E.y }, E])
+  }
+  let best = cands[0]
+  let bc = Infinity
+  for (const c of cands.map(simplify)) {
+    const v = cost(c)
+    if (v < bc) {
+      bc = v
+      best = c
+    }
+  }
+  return best
 }

@@ -34,7 +34,7 @@ const e1: Project = {
   title: '카페 홈페이지 도메인·HTTPS',
   client: 'cafe',
   org: '카페 하린',
-  summary: '내 도메인으로 접속하고 브라우저 경고 없이 HTTPS로. Route 53, CloudFront, ACM.',
+  summary: '내 도메인으로 접속하고 브라우저 경고 없이 HTTPS로\nRoute 53, CloudFront, ACM',
   topics: ['Route 53', 'ACM', 'CloudFront', 'HTTPS'],
   env: 'AWS',
   steps: [
@@ -158,7 +158,7 @@ const e2: Project = {
   title: '사진 업로드 썸네일 자동 생성',
   client: 'photo',
   org: '스냅로그',
-  summary: '업로드 이벤트로 Lambda를 실행해 썸네일 만들기. 이벤트 기반 서버리스.',
+  summary: '업로드 이벤트로 Lambda를 실행해 썸네일 만들기\n이벤트 기반 서버리스',
   topics: ['S3 이벤트 알림', 'Lambda', '이벤트 기반'],
   env: 'AWS',
   steps: [
@@ -273,7 +273,7 @@ const e3: Project = {
   title: '서버 접속 포트 닫기',
   client: 'gym',
   org: '핏앤런',
-  summary: 'SSH 포트를 인터넷에 열지 않고 서버 관리하기. Systems Manager Session Manager.',
+  summary: 'SSH 포트를 인터넷에 열지 않고 서버 관리하기\nSystems Manager Session Manager',
   topics: ['Session Manager', '보안 그룹', '프라이빗 서브넷'],
   env: 'AWS',
   steps: [
@@ -387,7 +387,7 @@ const n1: Project = {
   title: '주문 이벤트 팬아웃',
   client: 'shop2',
   org: '데일리박스',
-  summary: '주문 1건을 메일·포인트·배송 서비스에 각각 전달. SNS + SQS 팬아웃.',
+  summary: '주문 1건을 메일·포인트·배송 서비스에 각각 전달\nSNS + SQS 팬아웃',
   topics: ['SNS', 'SQS', '팬아웃', '느슨한 결합'],
   env: 'AWS',
   steps: [
@@ -510,7 +510,7 @@ const n2: Project = {
   title: '게임 로그 분석 플랫폼',
   client: 'game',
   org: '픽셀아레나',
-  summary: '대량 로그를 S3에 쌓고 서버 없이 SQL로 분석. Data Firehose, S3, Glue, Athena.',
+  summary: '대량 로그를 S3에 쌓고 서버 없이 SQL로 분석\nData Firehose, S3, Glue, Athena',
   topics: ['데이터 레이크', 'Firehose', 'Athena', 'Glue'],
   env: 'AWS',
   steps: [
@@ -638,7 +638,7 @@ const n3: Project = {
   title: '웹진 업로드 파일 공유',
   client: 'media',
   org: '웹진 플랫',
-  summary: '여러 웹 서버가 같은 파일을 보게 하기. EFS와 EBS의 차이.',
+  summary: '여러 웹 서버가 같은 파일을 보게 하기\nEFS와 EBS의 차이',
   topics: ['EFS', 'EBS', '공유 스토리지', 'Multi-AZ'],
   env: 'AWS',
   steps: [
@@ -742,7 +742,7 @@ const n4: Project = {
   title: '헬스케어 앱 로그인 API',
   client: 'app',
   org: '헬시핏',
-  summary: '회원 관리는 Cognito에 맡기고, 로그인한 사용자만 API 호출. Cognito + API Gateway.',
+  summary: '회원 관리는 Cognito에 맡기고, 로그인한 사용자만 API 호출\nCognito + API Gateway',
   topics: ['Cognito', 'API Gateway 권한 부여자', '서버리스'],
   env: 'AWS',
   steps: [
@@ -852,7 +852,7 @@ const h1: Project = {
   title: '보험사 DB 무중단 이전',
   client: 'insure',
   org: '한결손해보험',
-  summary: '온프레미스 Oracle을 Aurora로, 서비스 중단을 최소화하며 이전. DMS와 CDC.',
+  summary: '온프레미스 Oracle을 Aurora로, 서비스 중단을 최소화하며 이전\nDMS와 CDC',
   topics: ['DMS', '변경 데이터 캡처(CDC)', '이기종 마이그레이션', 'Aurora'],
   env: '하이브리드',
   steps: [
@@ -972,7 +972,7 @@ const h2: Project = {
   title: '그룹사 VPC 연결 허브',
   client: 'group',
   org: '그린에너지그룹',
-  summary: 'VPC가 늘어날수록 복잡해지는 피어링 대신 허브 구조로. Transit Gateway.',
+  summary: 'VPC가 늘어날수록 복잡해지는 피어링 대신 허브 구조로\nTransit Gateway',
   topics: ['Transit Gateway', 'VPC 피어링', '하이브리드 연결'],
   env: '멀티 VPC + 온프레미스',
   steps: [
@@ -1098,7 +1098,7 @@ const h3: Project = {
   title: '배달 앱 컨테이너 전환',
   client: 'delivery',
   org: '빠른식탁',
-  summary: '서버 관리 없이 컨테이너를 운영하고, 비밀번호는 코드 밖으로. ECS Fargate, ECR, Secrets Manager.',
+  summary: '서버 관리 없이 컨테이너를 운영하고, 비밀번호는 코드 밖으로\nECS Fargate, ECR, Secrets Manager',
   topics: ['ECS Fargate', 'ECR', 'Secrets Manager', '무중단 배포'],
   env: 'AWS',
   steps: [

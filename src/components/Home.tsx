@@ -3,9 +3,13 @@ import { LEVELS, PROJECTS } from '../data/projects'
 import { CHARS } from '../data/characters'
 import { Sprite } from './Sprite'
 import { STUDY_URL } from '../data/links'
+import { FRIENDS, GOLD } from '../data/rewards'
 import officeImg from '../assets/office.webp'
 import {
+  affinity,
   bestStars,
+  completionGold,
+  goldBalance,
   deleteCompletion,
   doneProjects,
   exportJson,
@@ -54,6 +58,7 @@ export function Home({
   onStart,
   onResume,
   onReset,
+  onGift,
 }: {
   progress: Progress
   setProgress: (p: Progress) => void
@@ -61,6 +66,7 @@ export function Home({
   onStart: (id: string) => void
   onResume: () => void
   onReset: () => void
+  onGift: () => void
 }) {
   const [tab, setTab] = useState<1 | 2 | 3>(unlockedLevel(progress))
   const [showBackup, setShowBackup] = useState(false)
@@ -124,11 +130,17 @@ export function Home({
               <small>최고 등급 달성</small>
             )}
           </div>
-          {STUDY_URL && (
-            <a className="study-link" href={STUDY_URL} target="_blank" rel="noopener noreferrer">
-              📚 공부하러 가기
-            </a>
-          )}
+          <div className="hero-actions">
+            <button className="gold-pill big" onClick={onGift} aria-label="보유 골드, 선물하기로 이동">
+              💰 {goldBalance(progress).toLocaleString('ko-KR')}
+              {GOLD}
+            </button>
+            {STUDY_URL && (
+              <a className="study-link" href={STUDY_URL} target="_blank" rel="noopener noreferrer">
+                📚 공부하러 가기
+              </a>
+            )}
+          </div>
         </div>
         <div className="hero-lead">
           <Sprite cfg={CHARS.lead} className="hero-sprite" />
@@ -170,6 +182,18 @@ export function Home({
           <span>→</span>
         </button>
       )}
+
+      <button className="gift-entry" onClick={onGift}>
+        <span className="ge-icon">🎁</span>
+        <span className="ge-text">
+          <b>선물하기</b>
+          <small>모은 골드로 동료에게 선물하고 특별 에피소드를 열어 보세요</small>
+        </span>
+        {FRIENDS.some((f) => f.episodes.some((e) => affinity(progress, f.id) >= e.need && !(progress.seenEpisodes ?? []).includes(e.id))) && (
+          <span className="ge-new">NEW</span>
+        )}
+        <span>→</span>
+      </button>
 
       <section className="card">
         <div className="card-head">
@@ -253,6 +277,7 @@ export function Home({
                 {c.peeked && <span className="pill warn tiny">해설 참고</span>}
                 {!c.counted && <span className="pill tiny">같은 날 반복</span>}
                 {c.counted && c.review && <span className="pill tiny">복습</span>}
+                {completionGold(c) > 0 && <span className="h-gold">+{completionGold(c)}{GOLD}</span>}
                 {delTs === c.ts ? (
                   <span className="h-confirm">
                     <span>이 기록을 지울까요?</span>

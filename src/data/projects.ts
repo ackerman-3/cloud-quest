@@ -28,7 +28,7 @@ const p1: Project = {
   title: '꽃집 온라인 주문 페이지',
   client: 'flower',
   org: '플로라 꽃방',
-  summary: '작은 꽃집의 첫 온라인 주문 사이트. 퍼블릭·프라이빗 서브넷을 나누는 기본 구성.',
+  summary: '작은 꽃집의 첫 온라인 주문 사이트\n퍼블릭·프라이빗 서브넷을 나누는 기본 구성',
   topics: ['VPC', '퍼블릭/프라이빗 서브넷', '인터넷 게이트웨이'],
   env: 'AWS',
   steps: [
@@ -163,7 +163,7 @@ const p2: Project = {
   title: '신간 홍보 페이지',
   client: 'publisher',
   org: '한빛나래출판',
-  summary: '서버 없이 운영하는 정적 웹사이트. S3와 CloudFront 조합.',
+  summary: '서버 없이 운영하는 정적 웹사이트\nS3와 CloudFront 조합',
   topics: ['S3', 'CloudFront', '정적 웹 호스팅'],
   env: 'AWS',
   steps: [
@@ -296,7 +296,7 @@ const p3: Project = {
   title: '쇼핑몰 서버 장애 대비',
   client: 'fashion',
   org: '무드웨어',
-  summary: '서버 한 대 장애에도 멈추지 않는 쇼핑몰. ALB + 2개 AZ + RDS Multi-AZ.',
+  summary: '서버 한 대 장애에도 멈추지 않는 쇼핑몰\nALB + 2개 AZ + RDS Multi-AZ',
   topics: ['가용 영역', 'ALB', 'RDS Multi-AZ'],
   env: 'AWS',
   steps: [
@@ -461,7 +461,7 @@ const p4: Project = {
   title: '정산 서버 보안 업데이트',
   client: 'settle',
   org: '대성물산',
-  summary: '외부 접속은 막고 업데이트만 내려받기. NAT 게이트웨이의 위치와 역할.',
+  summary: '외부 접속은 막고 업데이트만 내려받기\nNAT 게이트웨이의 위치와 역할',
   topics: ['NAT 게이트웨이', '아웃바운드 통신', '퍼블릭/프라이빗 서브넷'],
   env: 'AWS',
   steps: [
@@ -601,7 +601,7 @@ const p5: Project = {
   title: '콘서트 예매 트래픽 폭주',
   client: 'ticket',
   org: '스테이지원',
-  summary: '예매 오픈 순간의 폭주를 버티는 구성. Auto Scaling과 캐시.',
+  summary: '예매 오픈 순간의 폭주를 버티는 구성\nAuto Scaling과 캐시',
   topics: ['Auto Scaling', 'ElastiCache', 'ALB', 'Multi-AZ'],
   env: 'AWS',
   steps: [
@@ -797,7 +797,7 @@ const p6: Project = {
   title: '시청 민원 서비스 하이브리드 연결',
   client: 'city',
   org: '해솔시청',
-  summary: '민감 데이터는 기관 프라이빗 클라우드에, 대국민 서비스는 AWS에. Site-to-Site VPN.',
+  summary: '민감 데이터는 기관 프라이빗 클라우드에, 대국민 서비스는 AWS에\nSite-to-Site VPN',
   topics: ['하이브리드', 'VPC vs 프라이빗 클라우드', 'Site-to-Site VPN', 'Direct Connect'],
   env: '하이브리드',
   steps: [
@@ -973,7 +973,7 @@ const p7: Project = {
   title: '설문 API 서버리스 전환',
   client: 'survey',
   org: '폼잇',
-  summary: '들쭉날쭉한 사용량에 맞춰 쓴 만큼만 내는 구성. API Gateway + Lambda + DynamoDB.',
+  summary: '들쭉날쭉한 사용량에 맞춰 쓴 만큼만 내는 구성\nAPI Gateway + Lambda + DynamoDB',
   topics: ['서버리스', 'Lambda', 'API Gateway', 'DynamoDB'],
   env: 'AWS',
   steps: [
@@ -1105,7 +1105,7 @@ const p8: Project = {
   title: '디자인 스튜디오 파일 백업',
   client: 'design',
   org: '스튜디오 오르',
-  summary: '사내 파일 서버를 S3로 백업하고 장기 보관 비용을 낮추기. Storage Gateway와 수명 주기.',
+  summary: '사내 파일 서버를 S3로 백업하고 장기 보관 비용을 낮추기\nStorage Gateway와 수명 주기',
   topics: ['Storage Gateway', 'S3 수명 주기', 'Glacier Deep Archive', '하이브리드'],
   env: '하이브리드',
   steps: [
@@ -1246,7 +1246,7 @@ const p9: Project = {
   title: '주문 처리 디커플링',
   client: 'commerce',
   org: '바로마켓',
-  summary: '접수와 처리를 큐로 분리해 폭주와 장애에도 주문을 잃지 않기. SQS와 워커.',
+  summary: '접수와 처리를 큐로 분리해 폭주와 장애에도 주문을 잃지 않기\nSQS와 워커',
   topics: ['SQS', '디커플링', '비동기 처리', 'Multi-AZ'],
   env: 'AWS',
   steps: [
@@ -1427,7 +1427,7 @@ const p10: Project = {
   title: '금융 이벤트 페이지 보안 강화',
   client: 'bank',
   org: '새빛저축은행',
-  summary: '웹 공격 차단, DB 격리, 인터넷을 거치지 않는 S3 저장. WAF·CloudFront·VPC 엔드포인트.',
+  summary: '웹 공격 차단, DB 격리, 인터넷을 거치지 않는 S3 저장\nWAF·CloudFront·VPC 엔드포인트',
   topics: ['AWS WAF', 'CloudFront', 'VPC 엔드포인트', '보안 설계'],
   env: 'AWS',
   steps: [
@@ -1624,7 +1624,7 @@ const p11: Project = {
   title: '온라인 강의 플랫폼 재해 복구',
   client: 'edu',
   org: '런업에듀',
-  summary: '서울 리전 전체 장애에도 도쿄 리전으로 전환. Route 53 장애 조치와 리전 간 복제.',
+  summary: '서울 리전 전체 장애에도 도쿄 리전으로 전환\nRoute 53 장애 조치와 리전 간 복제',
   topics: ['재해 복구(DR)', 'Route 53 장애 조치', '리전 간 복제', 'RTO/RPO'],
   env: 'AWS 멀티 리전',
   steps: [

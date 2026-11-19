@@ -2,10 +2,17 @@ import { useEffect, useState } from 'react'
 import { Home } from './components/Home'
 import { Play } from './components/Play'
 import { Sprite } from './components/Sprite'
+import { Gifts, EpisodeHeader } from './components/Gifts'
+import { Talk } from './components/Talk'
+import { ATTEND_GOLD, GOLD, type Episode } from './data/rewards'
 import { PROJECTS, LEVELS } from './data/projects'
 import { CHARS } from './data/characters'
 import { STUDY_URL } from './data/links'
 import {
+  checkIn,
+  completionGold,
+  goldBalance,
+  markEpisodeSeen,
   loadProgress,
   loadSession,
   recordCompletion,
@@ -22,11 +29,14 @@ type View =
   | { v: 'home' }
   | { v: 'play'; id: string; resume?: Session | null }
   | { v: 'result'; id: string; c: Completion; levelUp: number | null }
+  | { v: 'gift'; friend?: string }
+  | { v: 'episode'; friend: string; ep: Episode }
 
 export default function App() {
   const [progress, setP] = useState<Progress>(loadProgress)
   const [session, setSession] = useState<Session | null>(loadSession)
   const [view, setView] = useState<View>({ v: 'home' })
+  const [notice, setNotice] = useState<string | null>(null)
 
   const setProgress = (p: Progress) => {
     setP(p)
@@ -38,6 +48,29 @@ export default function App() {
     navigator.storage?.persist?.().catch(() => {})
   }, [])
 
+  // 출석 보상: 앱을 열거나 다시 화면에 돌아왔을 때 오늘 첫 접속이면 골드 지급
+  useEffect(() => {
+    const attend = () => {
+      const cur = loadProgress()
+      const next = checkIn(cur)
+      if (!next) return
+      setProgress(next)
+      setNotice(`📅 오늘 출석 보상 +${ATTEND_GOLD}${GOLD}`)
+    }
+    attend()
+    const onVis = () => document.visibilityState === 'visible' && attend()
+    document.addEventListener('visibilitychange', onVis)
+    return () => document.removeEventListener('visibilitychange', onVis)
+  }, [])
+
+  useEffect(() => {
+    if (!notice) return
+    const t = window.setTimeout(() => setNotice(null), 3200)
+    return () => clearTimeout(t)
+  }, [notice])
+
+  const toast = notice && <div className="toast top-toast">{notice}</div>
+
   const start = (id: string) => {
     const s = loadSession()
     if (s && s.projectId !== id) {
@@ -47,6 +80,38 @@ export default function App() {
     }
     setView({ v: 'play', id, resume: s && s.projectId === id ? s : null })
     window.scrollTo(0, 0)
+  }
+
+  if (view.v === 'gift') {
+    return (
+      <>
+        <Gifts
+          progress={progress}
+          setProgress={setProgress}
+          initial={view.friend}
+          onBack={() => setView({ v: 'home' })}
+          onEpisode={(friend, ep) => {
+            setView({ v: 'episode', friend, ep })
+            window.scrollTo(0, 0)
+          }}
+        />
+        {toast}
+      </>
+    )
+  }
+
+  if (view.v === 'episode') {
+    const back = () => {
+      setProgress(markEpisodeSeen(progress, view.ep.id))
+      setView({ v: 'gift', friend: view.friend })
+      window.scrollTo(0, 0)
+    }
+    return (
+      <div className="play episode">
+        <EpisodeHeader title={view.ep.title} name={CHARS[view.friend].name} onBack={back} />
+        <Talk scene={view.ep.scene} lines={view.ep.lines} onDone={back} />
+      </div>
+    )
   }
 
   if (view.v === 'play') {
@@ -100,6 +165,21 @@ export default function App() {
               <>오늘 이미 완료한 프로젝트라 완료 수에는 더하지 않았어요. (오늘 {n}건)</>
             )}
           </div>
+          {(() => {
+            const g = completionGold(view.c)
+            return (
+              <div className="result-gold">
+                {g > 0 ? (
+                  <div>
+                    💰 <b>+{g.toLocaleString('ko-KR')}{GOLD}</b> 획득{view.c.review && ' (복습 보상)'}
+                  </div>
+                ) : (
+                  <div>오늘 이미 받은 프로젝트라 골드는 지급되지 않았어요.</div>
+                )}
+                <small>보유 {goldBalance(progress).toLocaleString('ko-KR')}{GOLD}</small>
+              </div>
+            )
+          })()}
           {view.levelUp && (
             <div className="levelup">
               🎉 승급! <b>{LEVELS[view.levelUp - 1].name}</b>가 되었어요. {LEVELS[view.levelUp - 1].diff} 프로젝트가 열렸어요.
@@ -126,7 +206,13 @@ export default function App() {
   }
 
   return (
+    <>
+    {toast}
     <Home
+      onGift={() => {
+        setView({ v: 'gift' })
+        window.scrollTo(0, 0)
+      }}
       progress={progress}
       setProgress={setProgress}
       session={session}
@@ -138,5 +224,6 @@ export default function App() {
         setProgress({ version: 1, completions: [], dailyGoal: progress.dailyGoal })
       }}
     />
+    </>
   )
 }
