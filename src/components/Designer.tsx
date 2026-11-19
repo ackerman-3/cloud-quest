@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { Design, PNode, Project } from '../types'
 import { Canvas, SvcIcon } from './Canvas'
 import { SCOPE_HINT, svc } from '../data/services'
-import { costIndex, deadSet, findBox, runScenarios } from '../engine'
+import { costIndex, deadSet, diffWithAnswer, findBox, runScenarios } from '../engine'
 
 interface Props {
   project: Project
@@ -88,7 +88,7 @@ export function Designer({ project, design, setDesign, peeked, onPeek, simRuns, 
       ...design,
       edges: has ? design.edges.filter(([x, y]) => !((x === a && y === b) || (x === b && y === a))) : [...design.edges, [a, b]],
     })
-    say(has ? '연결을 지웠어요.' : `${nodeName(a)} ↔ ${nodeName(b)} 연결`)
+    say(has ? '연결을 지웠어요.' : `${nodeName(a)} → ${nodeName(b)} 연결`)
   }
 
   const zoneAt = (x: number, y: number) =>
@@ -238,6 +238,7 @@ export function Designer({ project, design, setDesign, peeked, onPeek, simRuns, 
           hoverZone={hoverZone}
           connectFrom={from}
           selectedNode={selNode}
+          highlightNode={selNode ?? from}
           dead={cur ? deadSet(spec, design, cur.fail) : undefined}
           failBoxes={cur?.fail}
           flow={curRes ? (curRes.ok ? 'ok' : 'bad') : null}
@@ -270,7 +271,7 @@ export function Designer({ project, design, setDesign, peeked, onPeek, simRuns, 
         <div className="edge-list">
           {design.edges.map(([a, b]) => (
             <button key={`${a}-${b}`} className="edge-chip" onClick={() => toggleEdge(a, b)} title="눌러서 삭제">
-              {nodeName(a)} — {nodeName(b)} <b>×</b>
+              {nodeName(a)} → {nodeName(b)} <b>×</b>
             </button>
           ))}
         </div>
@@ -436,7 +437,23 @@ export function Designer({ project, design, setDesign, peeked, onPeek, simRuns, 
                     <li key={n}>{n}</li>
                   ))}
                 </ul>
+                <AnswerDiff diff={diffWithAnswer(spec, design)} />
                 <div className="row-end">
+                  <button
+                    className="ghost"
+                    onClick={() => {
+                      if (design.nodes.length > 0 && !confirm('지금 배치한 내용을 지우고 정답 구성 전체로 바꿀까요?')) return
+                      setDesign(structuredClone(spec.answer))
+                      setShowAnswer(false)
+                      setSelNode(null)
+                      setFrom(null)
+                      setConnect(false)
+                      setArmed(null)
+                      say('정답 구성으로 배치했어요. ▶ 시뮬레이션으로 확인해 보세요.')
+                    }}
+                  >
+                    🧩 정답 전체로 배치하기
+                  </button>
                   <button className="primary" onClick={() => setShowAnswer(false)}>
                     내 설계로 돌아가 다시 풀기
                   </button>
@@ -453,6 +470,38 @@ export function Designer({ project, design, setDesign, peeked, onPeek, simRuns, 
         </div>
       )}
       {toast && <div className="toast">{toast}</div>}
+    </div>
+  )
+}
+
+function AnswerDiff({ diff }: { diff: ReturnType<typeof diffWithAnswer> }) {
+  const groups: [string, string[]][] = [
+    ['정답에 있는데 내 설계에 없는 서비스', diff.missingNodes],
+    ['내 설계에만 있는 서비스', diff.extraNodes],
+    ['정답에 있는데 빠진 연결', diff.missingEdges],
+    ['내 설계에만 있는 연결', diff.extraEdges],
+  ]
+  const any = groups.some(([, l]) => l.length > 0)
+  return (
+    <div className="diff">
+      <h4>내 설계와 정답 비교</h4>
+      {!any ? (
+        <p className="same">배치 위치와 연결이 정답과 같아요.</p>
+      ) : (
+        groups
+          .filter(([, l]) => l.length > 0)
+          .map(([t, l]) => (
+            <div key={t}>
+              <b>{t}</b>
+              <ul>
+                {l.map((x, i) => (
+                  <li key={i}>{x}</li>
+                ))}
+              </ul>
+            </div>
+          ))
+      )}
+      <small>같은 서비스라도 놓인 영역(가용 영역·서브넷)이 다르면 다른 배치로 봐요. 정답과 달라도 모든 시나리오를 통과하면 완료돼요.</small>
     </div>
   )
 }

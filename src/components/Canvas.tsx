@@ -29,6 +29,8 @@ interface Props {
   hoverZone?: string | null
   connectFrom?: string | null
   selectedNode?: string | null
+  /** 이 노드에 붙은 선을 강조 */
+  highlightNode?: string | null
   dead?: Set<string>
   failBoxes?: string[]
   flow?: 'ok' | 'bad' | null
@@ -129,17 +131,35 @@ export function Canvas(p: Props) {
     <div className={`canvas mode-${p.mode}`} ref={wrap}>
       {renderBox(p.spec.layout)}
       <svg className="edges">
+        <defs>
+          {(['base', 'ok', 'bad', 'dead', 'hl'] as const).map((k) => (
+            <marker key={k} id={`arrow-${k}`} viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" className={`arrow-head ${k}`} />
+            </marker>
+          ))}
+        </defs>
         {edges.map(([a, b], i) => {
-          const A = pos[a]
-          const B = pos[b]
-          if (!A || !B) return null
+          const A0 = pos[a]
+          const B0 = pos[b]
+          if (!A0 || !B0) return null
+          // 아이콘 가장자리에서 시작·끝나도록 선을 잘라 출발점과 도착점이 아이콘에 가려지지 않게 한다
+          const dx = B0.x - A0.x
+          const dy = B0.y - A0.y
+          const len = Math.hypot(dx, dy) || 1
+          const cut = Math.min(19, len / 3)
+          const A = { x: A0.x + (dx / len) * cut, y: A0.y + (dy / len) * cut }
+          const B = { x: B0.x - (dx / len) * cut, y: B0.y - (dy / len) * cut }
           const dead = p.dead?.has(a) || p.dead?.has(b)
+          const hl = !p.flow && !!p.highlightNode && (a === p.highlightNode || b === p.highlightNode)
+          const state = dead ? 'dead' : p.flow ? p.flow : hl ? 'hl' : 'base'
           const d = `M${A.x},${A.y} L${B.x},${B.y}`
-          const cls = ['edge', dead ? 'dead' : '', p.flow && !dead ? p.flow : ''].join(' ')
+          const cls = ['edge', state].join(' ')
           const dots = p.flow === 'ok' && !dead ? Math.min(3, Math.max(1, Math.round((p.load ?? 1) / 3))) : 0
           return (
             <g key={`${a}-${b}-${i}`}>
-              <path d={d} className={cls} />
+              <path d={d} className="edge-halo" />
+              <path d={d} className={cls} markerEnd={`url(#arrow-${state})`} />
+              <circle cx={A.x} cy={A.y} r={4} className={`edge-start ${state}`} />
               {Array.from({ length: dots }).map((_, k) => (
                 <circle key={k} r={3.5} className="packet">
                   <animateMotion dur={`${1.1 + (i % 3) * 0.2}s`} begin={`${k * 0.35}s`} repeatCount="indefinite" path={d} />

@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import { LEVELS, PROJECTS } from '../data/projects'
 import { CHARS } from '../data/characters'
 import { Sprite } from './Sprite'
+import { STUDY_URL } from '../data/links'
 import officeImg from '../assets/office.webp'
 import {
   bestStars,
@@ -24,7 +25,7 @@ function Calendar({ p }: { p: Progress }) {
   const cells: { d: string; n: number; isToday: boolean }[] = []
   const end = new Date()
   const start = new Date()
-  start.setDate(end.getDate() - 27 - end.getDay()) // 일요일부터 시작, 4주 + 이번 주
+  start.setDate(end.getDate() - 28 - end.getDay()) // 4주 전 일요일부터 시작해 이번 주 오늘까지(요일 열과 맞춤)
   for (const d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
     const k = today(d)
     cells.push({ d: k, n: days.has(k) ? (counts.get(k) ?? 1) : 0, isToday: k === today() })
@@ -38,7 +39,7 @@ function Calendar({ p }: { p: Progress }) {
       ))}
       {cells.map((c) => (
         <span key={c.d} className={`cal-d l${Math.min(3, c.n)} ${c.isToday ? 'today' : ''}`} title={`${c.d} · ${c.n}건`}>
-          {Number(c.d.slice(8))}
+          {c.d.slice(8) === '01' ? `${Number(c.d.slice(5, 7))}/1` : Number(c.d.slice(8))}
         </span>
       ))}
     </div>
@@ -121,6 +122,11 @@ export function Home({
               <small>최고 등급 달성</small>
             )}
           </div>
+          {STUDY_URL && (
+            <a className="study-link" href={STUDY_URL} target="_blank" rel="noopener noreferrer">
+              📚 공부하러 가기
+            </a>
+          )}
         </div>
         <div className="hero-lead">
           <Sprite cfg={CHARS.lead} className="hero-sprite" />

@@ -52,7 +52,7 @@ export function Play({
     <div className="play">
       <header className="play-head">
         <button className="ghost small" onClick={onExit}>
-          ← 현황판
+          ← 메인으로
         </button>
         <div className="play-title">
           <small>{project.org}</small>

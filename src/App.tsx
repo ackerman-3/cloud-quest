@@ -4,6 +4,7 @@ import { Play } from './components/Play'
 import { Sprite } from './components/Sprite'
 import { PROJECTS, LEVELS } from './data/projects'
 import { CHARS } from './data/characters'
+import { STUDY_URL } from './data/links'
 import {
   loadProgress,
   loadSession,
@@ -74,7 +75,14 @@ export default function App() {
   if (view.v === 'result') {
     const project = PROJECTS.find((p) => p.id === view.id)!
     const n = todayCount(progress)
-    const nextP = PROJECTS.find((p) => p.level <= unlockedLevel(progress) && !progress.completions.some((c) => c.projectId === p.id))
+    // 다음 문제: 방금 푼 직급(난이도)의 안 푼 프로젝트를 먼저 이어서 낸다. 승급해도 같은 직급을 다 풀 때까지는 넘어가지 않는다.
+    const notDone = (p: (typeof PROJECTS)[number]) => !progress.completions.some((c) => c.projectId === p.id)
+    const idx = PROJECTS.findIndex((p) => p.id === project.id)
+    const ordered = [...PROJECTS.slice(idx + 1), ...PROJECTS.slice(0, idx)]
+    const nextP =
+      ordered.find((p) => p.level === project.level && notDone(p)) ??
+      PROJECTS.find((p) => p.level > project.level && p.level <= unlockedLevel(progress) && notDone(p)) ??
+      PROJECTS.find((p) => p.level <= unlockedLevel(progress) && notDone(p))
     return (
       <div className="result">
         <div className="result-card">
@@ -99,14 +107,19 @@ export default function App() {
           )}
           <div className="row-center">
             <button className="ghost" onClick={() => setView({ v: 'home' })}>
-              현황판
+              메인으로
             </button>
             {nextP && (
               <button className="primary" onClick={() => start(nextP.id)}>
-                다음 프로젝트: {nextP.title}
+                다음 {LEVELS[nextP.level - 1].name.split(" ")[0]} 프로젝트: {nextP.title}
               </button>
             )}
           </div>
+          {STUDY_URL && (
+            <a className="study-link" href={STUDY_URL} target="_blank" rel="noopener noreferrer">
+              📚 공부하러 가기
+            </a>
+          )}
         </div>
       </div>
     )

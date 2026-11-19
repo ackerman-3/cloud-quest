@@ -114,7 +114,7 @@ h3 {
   letter-spacing: 1px;
 }
 
-/* ── 현황판 ── */
+/* ── 메인 화면 ── */
 .home {
   padding: 12px 12px 40px;
   display: grid;
@@ -797,12 +797,37 @@ details summary {
   z-index: 2;
   overflow: visible;
 }
-.edge {
-  stroke: #4c6185;
-  stroke-width: 2;
+.edge-halo {
+  stroke: #fff;
+  stroke-width: 6;
+  stroke-linecap: round;
   fill: none;
-  opacity: 0.8;
+  opacity: 0.85;
 }
+.edge {
+  stroke: #3d5a8c;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  fill: none;
+}
+.edge.hl {
+  stroke: #2f6bff;
+  stroke-width: 3.2;
+}
+.edge-start {
+  fill: #fff;
+  stroke: #3d5a8c;
+  stroke-width: 2.4;
+}
+.edge-start.ok { stroke: #1f9d63; }
+.edge-start.bad { stroke: #d64545; }
+.edge-start.dead { stroke: #b8c0cc; }
+.edge-start.hl { stroke: #2f6bff; }
+.arrow-head { fill: #3d5a8c; }
+.arrow-head.ok { fill: #1f9d63; }
+.arrow-head.bad { fill: #d64545; }
+.arrow-head.dead { fill: #b8c0cc; }
+.arrow-head.hl { fill: #2f6bff; }
 .edge.ok {
   stroke: #1f9d63;
 }
@@ -1427,4 +1452,52 @@ details summary {
   margin: 6px 0 10px;
   line-height: 1.6;
   color: #6b2a2a;
+}
+
+/* ── 정답과 비교 ── */
+.diff {
+  background: #fff8e6;
+  border: 1px solid #f0d28a;
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin: 10px 0;
+  font-size: 13px;
+}
+.diff h4 {
+  margin: 0 0 6px;
+  font-size: 13px;
+}
+.diff ul {
+  margin: 0;
+  padding-left: 18px;
+}
+.diff li {
+  margin: 2px 0;
+}
+.diff .same {
+  color: #1f7a4f;
+  margin: 0;
+}
+.diff small {
+  display: block;
+  color: #7a6a3a;
+  margin-top: 6px;
+}
+/* ── 공부하러 가기 ── */
+.study-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: #ffd84d;
+  color: #1b1f2a;
+  font-weight: 800;
+  font-size: 14px;
+  text-decoration: none;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.25);
+}
+.result-card .study-link {
+  margin: 12px auto 0;
 }

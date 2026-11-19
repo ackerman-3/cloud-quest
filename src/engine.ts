@@ -139,3 +139,70 @@ export function deadSet(spec: DesignSpec, d: Design, fail: string[] = []) {
       .map((n) => n.id),
   )
 }
+
+/** 내 설계와 정답 구성을 비교해 빠진 것·더 있는 것을 사람이 읽을 수 있는 문장으로 돌려준다 */
+export function diffWithAnswer(spec: DesignSpec, d: Design) {
+  const parents = parentMap(spec.layout)
+  const fixedIds = new Set(spec.fixed.map((f) => f.id))
+  const place = (zone: string) => {
+    const b = findBox(spec.layout, zone)
+    let z = parents.get(zone)
+    let az: string | null = null
+    while (z) {
+      const pb = findBox(spec.layout, z)
+      if (pb?.kind === 'az') {
+        az = pb.label
+        break
+      }
+      z = parents.get(z)
+    }
+    return [az, b?.label].filter(Boolean).join(' › ')
+  }
+  const keyOf = (design: Design) => {
+    const m = new Map<string, string>()
+    for (const f of spec.fixed) m.set(f.id, f.id)
+    for (const n of design.nodes) m.set(n.id, `${n.service}@${n.zone}`)
+    return m
+  }
+  const nameOfKey = (k: string) => {
+    if (fixedIds.has(k)) {
+      const f = spec.fixed.find((x) => x.id === k)!
+      return f.label ?? svc(f.service).name
+    }
+    const [s, z] = k.split('@')
+    return `${svc(s).name} (${place(z)})`
+  }
+  const bag = (keys: string[]) => {
+    const m = new Map<string, number>()
+    keys.forEach((k) => m.set(k, (m.get(k) ?? 0) + 1))
+    return m
+  }
+  const minus = (a: Map<string, number>, b: Map<string, number>) => {
+    const out: string[] = []
+    a.forEach((n, k) => {
+      for (let i = 0; i < n - (b.get(k) ?? 0); i++) out.push(k)
+    })
+    return out
+  }
+  const ansKey = keyOf(spec.answer)
+  const myKey = keyOf(d)
+  const nodeBag = (design: Design, km: Map<string, string>) => bag(design.nodes.map((n) => km.get(n.id)!))
+  const edgeBag = (design: Design, km: Map<string, string>) =>
+    bag(
+      design.edges
+        .map(([a, b]) => [km.get(a), km.get(b)])
+        .filter((e): e is [string, string] => !!e[0] && !!e[1])
+        .map((e) => e.sort().join('\u0001')),
+    )
+  const an = nodeBag(spec.answer, ansKey)
+  const mn = nodeBag(d, myKey)
+  const ae = edgeBag(spec.answer, ansKey)
+  const me = edgeBag(d, myKey)
+  const edgeName = (k: string) => k.split('\u0001').map(nameOfKey).join(' ↔ ')
+  return {
+    missingNodes: minus(an, mn).map(nameOfKey),
+    extraNodes: minus(mn, an).map(nameOfKey),
+    missingEdges: minus(ae, me).map(edgeName),
+    extraEdges: minus(me, ae).map(edgeName),
+  }
+}
