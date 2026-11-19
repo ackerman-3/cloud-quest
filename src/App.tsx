@@ -4,11 +4,13 @@ import { Play } from './components/Play'
 import { Sprite } from './components/Sprite'
 import { Gifts, EpisodeHeader } from './components/Gifts'
 import { Talk } from './components/Talk'
-import { ATTEND_GOLD, GOLD, type Episode } from './data/rewards'
+import { PinLock } from './components/PinLock'
+import { ATTEND_GOLD, FRIENDS, GOLD, type Episode } from './data/rewards'
 import { PROJECTS, LEVELS } from './data/projects'
 import { CHARS } from './data/characters'
 import { STUDY_URL } from './data/links'
 import {
+  affinity,
   checkIn,
   completionGold,
   goldBalance,
@@ -25,11 +27,12 @@ import {
   type Session,
 } from './store'
 
+type Tab = 'home' | 'projects' | 'gift' | 'records'
+
 type View =
   | { v: 'home' }
   | { v: 'play'; id: string; resume?: Session | null }
   | { v: 'result'; id: string; c: Completion; levelUp: number | null }
-  | { v: 'gift'; friend?: string }
   | { v: 'episode'; friend: string; ep: Episode }
 
 export default function App() {
@@ -37,6 +40,15 @@ export default function App() {
   const [session, setSession] = useState<Session | null>(loadSession)
   const [view, setView] = useState<View>({ v: 'home' })
   const [notice, setNotice] = useState<string | null>(null)
+  const [tab, setTab] = useState<Tab>('home')
+  const [giftFriend, setGiftFriend] = useState<string | undefined>()
+  const [giftOpen, setGiftOpen] = useState(false)
+  const goTab = (t: Tab) => {
+    if (t !== 'gift') setGiftOpen(false) // 선물 탭을 벗어나면 다시 잠금
+    setTab(t)
+    setView({ v: 'home' })
+    window.scrollTo(0, 0)
+  }
 
   const setProgress = (p: Progress) => {
     setP(p)
@@ -58,7 +70,10 @@ export default function App() {
       setNotice(`📅 오늘 출석 보상 +${ATTEND_GOLD}${GOLD}`)
     }
     attend()
-    const onVis = () => document.visibilityState === 'visible' && attend()
+    const onVis = () => {
+      if (document.visibilityState === 'visible') attend()
+      else setGiftOpen(false) // 앱을 내리면 선물 메뉴 다시 잠금
+    }
     document.addEventListener('visibilitychange', onVis)
     return () => document.removeEventListener('visibilitychange', onVis)
   }, [])
@@ -82,29 +97,11 @@ export default function App() {
     window.scrollTo(0, 0)
   }
 
-  if (view.v === 'gift') {
-    return (
-      <>
-        <Gifts
-          progress={progress}
-          setProgress={setProgress}
-          initial={view.friend}
-          onBack={() => setView({ v: 'home' })}
-          onEpisode={(friend, ep) => {
-            setView({ v: 'episode', friend, ep })
-            window.scrollTo(0, 0)
-          }}
-        />
-        {toast}
-      </>
-    )
-  }
-
   if (view.v === 'episode') {
     const back = () => {
       setProgress(markEpisodeSeen(progress, view.ep.id))
-      setView({ v: 'gift', friend: view.friend })
-      window.scrollTo(0, 0)
+      setGiftFriend(view.friend)
+      goTab('gift')
     }
     return (
       <div className="play episode">
@@ -122,7 +119,7 @@ export default function App() {
         resume={view.resume}
         onExit={() => {
           setSession(loadSession())
-          setView({ v: 'home' })
+          goTab('home')
         }}
         onFinish={({ stars, peeked }) => {
           const before = unlockedLevel(progress)
@@ -186,7 +183,7 @@ export default function App() {
             </div>
           )}
           <div className="row-center">
-            <button className="ghost" onClick={() => setView({ v: 'home' })}>
+            <button className="ghost" onClick={() => goTab('home')}>
               메인으로
             </button>
             {nextP && (
@@ -205,25 +202,56 @@ export default function App() {
     )
   }
 
+  const newEp = FRIENDS.some((f) => f.episodes.some((e) => affinity(progress, f.id) >= e.need && !(progress.seenEpisodes ?? []).includes(e.id)))
   return (
-    <>
-    {toast}
-    <Home
-      onGift={() => {
-        setView({ v: 'gift' })
-        window.scrollTo(0, 0)
-      }}
-      progress={progress}
-      setProgress={setProgress}
-      session={session}
-      onStart={start}
-      onResume={() => session && setView({ v: 'play', id: session.projectId, resume: session })}
-      onReset={() => {
-        saveSession(null)
-        setSession(null)
-        setProgress({ version: 1, completions: [], dailyGoal: progress.dailyGoal })
-      }}
-    />
-    </>
+    <div className="with-nav">
+      {toast}
+      {tab === 'gift' && !giftOpen ? (
+        <PinLock onUnlock={() => setGiftOpen(true)} />
+      ) : tab === 'gift' ? (
+        <Gifts
+          key={giftFriend}
+          progress={progress}
+          setProgress={setProgress}
+          initial={giftFriend}
+          onEpisode={(friend, ep) => {
+            setView({ v: 'episode', friend, ep })
+            window.scrollTo(0, 0)
+          }}
+        />
+      ) : (
+        <Home
+          section={tab}
+          onTab={goTab}
+          onGift={() => goTab('gift')}
+          progress={progress}
+          setProgress={setProgress}
+          session={session}
+          onStart={start}
+          onResume={() => session && setView({ v: 'play', id: session.projectId, resume: session })}
+          onReset={() => {
+            saveSession(null)
+            setSession(null)
+            setProgress({ version: 1, completions: [], dailyGoal: progress.dailyGoal })
+          }}
+        />
+      )}
+      <nav className="bottom-nav">
+        {(
+          [
+            ['home', '🏠', '홈'],
+            ['projects', '📋', '프로젝트'],
+            ['gift', '🎁', '선물'],
+            ['records', '📅', '기록'],
+          ] as const
+        ).map(([id, icon, label]) => (
+          <button key={id} className={tab === id ? 'on' : ''} onClick={() => goTab(id)} aria-current={tab === id ? 'page' : undefined}>
+            <span className="bn-icon">{icon}</span>
+            <span>{label}</span>
+            {id === 'gift' && newEp && <i className="bn-dot" />}
+          </button>
+        ))}
+      </nav>
+    </div>
   )
 }

@@ -1914,3 +1914,236 @@ details summary {
   font-size: 12px;
   color: var(--sub);
 }
+
+/* ── 하단 메뉴바 ── */
+.with-nav {
+  padding-bottom: calc(68px + env(safe-area-inset-bottom, 0px));
+}
+.bottom-nav {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 50;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  max-width: 980px;
+  margin: 0 auto;
+  background: rgba(255, 255, 255, 0.99);
+  box-shadow: 0 -4px 16px rgba(20, 35, 60, 0.06);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-top: 1px solid #e3e7ee;
+  padding: 6px 4px calc(6px + env(safe-area-inset-bottom, 0px));
+}
+.bottom-nav button {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  border: none;
+  background: transparent;
+  color: #8a94a6;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 0;
+  border-radius: 10px;
+}
+.bottom-nav .bn-icon {
+  font-size: 22px;
+  line-height: 1;
+  filter: grayscale(1);
+  opacity: 0.6;
+  transition: transform 0.15s;
+}
+.bottom-nav button.on {
+  color: var(--navy);
+}
+.bottom-nav button.on .bn-icon {
+  filter: none;
+  opacity: 1;
+  transform: translateY(-1px) scale(1.08);
+}
+.bn-dot {
+  position: absolute;
+  top: 2px;
+  right: calc(50% - 18px);
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #e5484d;
+  border: 2px solid #fff;
+}
+.with-nav .gifts .play-head {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+/* ── 홈(현황) 카드 ── */
+.next-rec {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 10px;
+  text-align: left;
+  width: 100%;
+  border: none;
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  background: linear-gradient(120deg, #1f3c88, #2f6bff);
+  color: #fff;
+  cursor: pointer;
+}
+.next-rec .nr-kicker {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  opacity: 0.85;
+}
+.next-rec b {
+  font-size: 17px;
+}
+.next-rec small {
+  opacity: 0.85;
+  font-size: 12px;
+}
+.next-rec .nr-go {
+  grid-column: 2;
+  grid-row: 1 / span 3;
+  align-self: center;
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-weight: 800;
+  font-size: 14px;
+}
+.mini-week {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+}
+.mw {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+}
+.mw i {
+  width: 100%;
+  max-width: 38px;
+  aspect-ratio: 1;
+  border-radius: 10px;
+  background: #eef1f6;
+  display: grid;
+  place-items: center;
+  font-style: normal;
+  font-weight: 800;
+  font-size: 13px;
+  color: #fff;
+}
+.mw i.l1 { background: #9cb8f7; }
+.mw i.l2 { background: #5d8cf5; }
+.mw i.l3 { background: #2f6bff; }
+.mw small {
+  font-size: 11px;
+  color: var(--sub);
+}
+
+/* ── 비밀번호 잠금 ── */
+.pin-lock {
+  min-height: calc(100vh - 80px);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  background: linear-gradient(180deg, #13213c 0%, #24365f 100%);
+  color: #fff;
+  padding: 48px 24px 24px;
+}
+.pin-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+}
+.pin-overlay .pin-lock {
+  min-height: 100%;
+  height: 100%;
+  padding-top: calc(48px + env(safe-area-inset-top, 0px));
+  padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+}
+.pin-top {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  text-align: center;
+}
+.pin-icon {
+  font-size: 34px;
+}
+.pin-title {
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  opacity: 0.7;
+  font-weight: 700;
+}
+.pin-top p {
+  margin: 6px 0 14px;
+  font-size: 17px;
+  font-weight: 700;
+}
+.pin-dots {
+  display: flex;
+  gap: 18px;
+}
+.pin-dots i {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.7);
+  transition: background 0.1s;
+}
+.pin-dots i.on {
+  background: #fff;
+  border-color: #fff;
+}
+.pin-dots.shake {
+  animation: pinShake 0.45s;
+}
+@keyframes pinShake {
+  20%, 60% { transform: translateX(-10px); }
+  40%, 80% { transform: translateX(10px); }
+}
+.pin-err {
+  min-height: 20px;
+  margin-top: 12px;
+  font-size: 13px;
+  color: #ffb4b4;
+}
+.pin-pad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px 22px;
+  max-width: 300px;
+  width: 100%;
+  margin: 24px auto 0;
+}
+.pin-pad button {
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  font-size: 26px;
+  font-weight: 600;
+}
+.pin-pad button:active {
+  background: rgba(255, 255, 255, 0.3);
+}
+.pin-pad button:disabled {
+  opacity: 0.35;
+}
+.pin-pad .pin-sub {
+  background: transparent;
+  font-size: 15px;
+}
+.pin-pad .pin-sub:disabled {
+  opacity: 0;
+}

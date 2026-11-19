@@ -51,6 +51,51 @@ function Calendar({ p }: { p: Progress }) {
   )
 }
 
+function LevelBars({ progress }: { progress: Progress }) {
+  return (
+    <div className="level-bars">
+      {LEVELS.map((L) => {
+        const n = PROJECTS.filter((p) => p.level === L.level).length
+        const d = doneProjects(progress, L.level).length
+        return (
+          <div key={L.level} className="lb">
+            <small>{L.name}</small>
+            <div className="bar thin">
+              <i style={{ width: `${(d / n) * 100}%` }} />
+            </div>
+            <small>
+              {d}/{n}
+            </small>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+/** 최근 7일 학습 여부 */
+function MiniWeek({ p }: { p: Progress }) {
+  const counts = new Map<string, number>()
+  p.completions.forEach((c) => c.counted && counts.set(c.date, (counts.get(c.date) ?? 0) + 1))
+  const days: { k: string; w: string; n: number }[] = []
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date()
+    d.setDate(d.getDate() - i)
+    const k = today(d)
+    days.push({ k, w: i === 0 ? '오늘' : '일월화수목금토'[d.getDay()], n: counts.get(k) ?? 0 })
+  }
+  return (
+    <div className="mini-week">
+      {days.map((d) => (
+        <div key={d.k} className={`mw ${d.n ? 'on' : ''}`}>
+          <i className={`l${Math.min(3, d.n)}`}>{d.n || ''}</i>
+          <small>{d.w}</small>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 export function Home({
   progress,
   setProgress,
@@ -59,6 +104,8 @@ export function Home({
   onResume,
   onReset,
   onGift,
+  section,
+  onTab,
 }: {
   progress: Progress
   setProgress: (p: Progress) => void
@@ -67,6 +114,8 @@ export function Home({
   onResume: () => void
   onReset: () => void
   onGift: () => void
+  section: 'home' | 'projects' | 'records'
+  onTab: (t: 'projects' | 'records') => void
 }) {
   const [tab, setTab] = useState<1 | 2 | 3>(unlockedLevel(progress))
   const [showBackup, setShowBackup] = useState(false)
@@ -82,6 +131,9 @@ export function Home({
   const nextNeed = nextL ? nextL.need - doneProjects(progress, unlocked).length : 0
   const sessionProject = session ? PROJECTS.find((p) => p.id === session.projectId) : null
   const recent = [...progress.completions].reverse().slice(0, 8)
+  const doneIds = new Set(progress.completions.map((c) => c.projectId))
+  const nextRec = [...PROJECTS].sort((a, b) => a.level - b.level).find((p) => p.level <= unlocked && !doneIds.has(p.id))
+  const newEp = FRIENDS.some((f) => f.episodes.some((e) => affinity(progress, f.id) >= e.need && !(progress.seenEpisodes ?? []).includes(e.id)))
 
   const download = () => {
     const blob = new Blob([exportJson(progress)], { type: 'application/json' })
@@ -114,6 +166,8 @@ export function Home({
 
   return (
     <div className="home">
+      {section === 'home' && (
+        <>
       <section className="hero">
         <img src={officeImg} alt="" className="hero-bg" />
         <div className="hero-shade" />
@@ -183,18 +237,51 @@ export function Home({
         </button>
       )}
 
-      <button className="gift-entry" onClick={onGift}>
-        <span className="ge-icon">🎁</span>
-        <span className="ge-text">
-          <b>선물하기</b>
-          <small>모은 골드로 동료에게 선물하고 특별 에피소드를 열어 보세요</small>
-        </span>
-        {FRIENDS.some((f) => f.episodes.some((e) => affinity(progress, f.id) >= e.need && !(progress.seenEpisodes ?? []).includes(e.id))) && (
-          <span className="ge-new">NEW</span>
-        )}
-        <span>→</span>
-      </button>
+      {nextRec && (
+        <button className="next-rec" onClick={() => onStart(nextRec.id)}>
+          <span className="nr-kicker">다음 추천 · {LEVELS[nextRec.level - 1].name.split(' ')[0]}</span>
+          <b>{nextRec.title}</b>
+          <small>
+            {nextRec.org} · {nextRec.topics.slice(0, 3).join(' · ')}
+          </small>
+          <span className="nr-go">시작 →</span>
+        </button>
+      )}
 
+      <section className="card">
+        <div className="card-head">
+          <h2>승급 현황</h2>
+          <button className="ghost small" onClick={() => onTab('projects')}>
+            프로젝트 보기
+          </button>
+        </div>
+        <LevelBars progress={progress} />
+      </section>
+
+      {newEp && (
+        <button className="gift-entry" onClick={onGift}>
+          <span className="ge-icon">💌</span>
+          <span className="ge-text">
+            <b>새 특별 에피소드가 열려 있어요</b>
+            <small>선물 탭에서 확인해 보세요</small>
+          </span>
+          <span className="ge-new">NEW</span>
+        </button>
+      )}
+
+      <section className="card">
+        <div className="card-head">
+          <h2>최근 학습</h2>
+          <button className="ghost small" onClick={() => onTab('records')}>
+            기록 보기
+          </button>
+        </div>
+        <MiniWeek p={progress} />
+      </section>
+        </>
+      )}
+
+      {section === 'projects' && (
       <section className="card">
         <div className="card-head">
           <h2>프로젝트</h2>
@@ -207,23 +294,7 @@ export function Home({
             ))}
           </div>
         </div>
-        <div className="level-bars">
-          {LEVELS.map((L) => {
-            const n = PROJECTS.filter((p) => p.level === L.level).length
-            const d = doneProjects(progress, L.level).length
-            return (
-              <div key={L.level} className="lb">
-                <small>{L.name}</small>
-                <div className="bar thin">
-                  <i style={{ width: `${(d / n) * 100}%` }} />
-                </div>
-                <small>
-                  {d}/{n}
-                </small>
-              </div>
-            )
-          })}
-        </div>
+        <LevelBars progress={progress} />
         {tab > unlocked && (
           <p className="locked-note">
             🔒 {LEVELS[tab - 2].diff} 프로젝트를 {LEVELS[tab - 1].need}건 완료하면 "{LEVELS[tab - 1].name}"로 승급해 열려요.
@@ -258,6 +329,10 @@ export function Home({
         </ul>
       </section>
 
+      )}
+
+      {section === 'records' && (
+        <>
       <section className="card">
         <h2>학습 달력</h2>
         <Calendar p={progress} />
@@ -393,6 +468,8 @@ export function Home({
         {msg && <p className="ok-note">{msg}</p>}
       </section>
       <footer className="foot">학습용 시나리오이며 실제 서비스 가격·할당량은 AWS 문서를 확인하세요.</footer>
+        </>
+      )}
     </div>
   )
 }

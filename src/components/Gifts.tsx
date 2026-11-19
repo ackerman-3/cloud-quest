@@ -11,13 +11,11 @@ export function Gifts({
   progress,
   setProgress,
   initial,
-  onBack,
   onEpisode,
 }: {
   progress: Progress
   setProgress: (p: Progress) => void
   initial?: string
-  onBack: () => void
   onEpisode: (friendId: string, ep: Episode) => void
 }) {
   const [fid, setFid] = useState(initial ?? FRIENDS[0].id)
@@ -68,9 +66,6 @@ export function Gifts({
   return (
     <div className="gifts">
       <header className="play-head">
-        <button className="ghost small" onClick={onBack}>
-          ← 메인으로
-        </button>
         <div className="play-title">
           <small>동료에게 마음 전하기</small>
           <b>🎁 선물하기</b>
