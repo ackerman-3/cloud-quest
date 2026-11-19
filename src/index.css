@@ -2050,13 +2050,17 @@ details summary {
 
 /* ── 비밀번호 잠금 ── */
 .pin-lock {
-  min-height: calc(100vh - 80px);
+  /* 화면 위아래 여백·하단 메뉴바를 뺀 높이 안에서 비밀번호 표시와 키패드를 한데 모아 가운데 배치 */
+  min-height: calc(100vh - 80px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+  min-height: calc(100dvh - 80px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: center;
+  gap: 28px;
   background: linear-gradient(180deg, #13213c 0%, #24365f 100%);
   color: #fff;
-  padding: 48px 24px 24px;
+  padding: 20px 24px;
+  box-sizing: border-box;
 }
 .pin-overlay {
   position: fixed;
@@ -2119,20 +2123,21 @@ details summary {
 }
 .pin-pad {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 14px 22px;
-  max-width: 300px;
-  width: 100%;
-  margin: 24px auto 0;
+  grid-template-columns: repeat(3, 68px);
+  gap: 14px 26px;
+  justify-content: center;
+  margin: 0 auto;
 }
 .pin-pad button {
-  aspect-ratio: 1;
+  width: 68px;
+  height: 68px;
   border-radius: 50%;
   border: none;
   background: rgba(255, 255, 255, 0.12);
   color: #fff;
   font-size: 26px;
   font-weight: 600;
+  padding: 0;
 }
 .pin-pad button:active {
   background: rgba(255, 255, 255, 0.3);
@@ -2146,4 +2151,24 @@ details summary {
 }
 .pin-pad .pin-sub:disabled {
   opacity: 0;
+}
+/* 세로가 짧은 화면(작은 아이폰, Safari 주소창이 보일 때)에서는 키패드를 줄인다 */
+@media (max-height: 720px) {
+  .pin-lock { gap: 18px; padding: 12px 20px; }
+  .pin-icon { font-size: 26px; }
+  .pin-top { gap: 4px; }
+  .pin-top p { margin: 2px 0 10px; font-size: 16px; }
+  .pin-err { margin-top: 8px; }
+  .pin-pad { grid-template-columns: repeat(3, 60px); gap: 10px 24px; }
+  .pin-pad button { width: 60px; height: 60px; font-size: 24px; }
+}
+@media (max-height: 600px) {
+  .pin-lock { gap: 12px; padding: 8px 20px; }
+  .pin-icon { display: none; }
+  .pin-pad { grid-template-columns: repeat(3, 52px); gap: 8px 22px; }
+  .pin-pad button { width: 52px; height: 52px; font-size: 22px; }
+}
+/* 잠금 화면일 때 메뉴바 위 빈틈도 같은 색으로 */
+.with-nav:has(.pin-lock) {
+  background: #24365f;
 }

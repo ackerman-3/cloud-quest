@@ -25,17 +25,6 @@ export function PinLock({ onUnlock, title = '선물하기' }: { onUnlock: () => 
   const [pin, setPin] = useState('')
   const [err, setErr] = useState<string | null>(null)
   const [shake, setShake] = useState(false)
-  const [fails, setFails] = useState(0)
-  const [waitUntil, setWaitUntil] = useState(0)
-  const [now, setNow] = useState(Date.now())
-
-  const locked = waitUntil > now
-  useEffect(() => {
-    if (!locked) return
-    const t = window.setInterval(() => setNow(Date.now()), 500)
-    return () => clearInterval(t)
-  }, [locked])
-
   useEffect(() => {
     if (pin.length !== 4) return
     const t = window.setTimeout(async () => {
@@ -43,16 +32,7 @@ export function PinLock({ onUnlock, title = '선물하기' }: { onUnlock: () => 
         onUnlock()
         return
       }
-      const n = fails + 1
-      if (n >= 5) {
-        setWaitUntil(Date.now() + 30000)
-        setNow(Date.now())
-        setFails(0)
-        setErr('5번 틀려서 30초 동안 입력할 수 없어요.')
-      } else {
-        setFails(n)
-        setErr(`비밀번호가 달라요. (${n}/5)`)
-      }
+      setErr('비밀번호가 달라요.')
       setShake(true)
       window.setTimeout(() => setShake(false), 450)
       setPin('')
@@ -62,7 +42,6 @@ export function PinLock({ onUnlock, title = '선물하기' }: { onUnlock: () => 
   }, [pin])
 
   const press = (d: string) => {
-    if (locked) return
     setErr(null)
     setPin((p) => (p.length < 4 ? p + d : p))
   }
@@ -78,16 +57,16 @@ export function PinLock({ onUnlock, title = '선물하기' }: { onUnlock: () => 
             <i key={i} className={i < pin.length ? 'on' : ''} />
           ))}
         </div>
-        <div className="pin-err">{locked ? `${Math.ceil((waitUntil - now) / 1000)}초 후에 다시 입력할 수 있어요.` : (err ?? '')}</div>
+        <div className="pin-err">{err ?? ''}</div>
       </div>
       <div className="pin-pad">
         {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((d) => (
-          <button key={d} onClick={() => press(d)} disabled={locked}>
+          <button key={d} onClick={() => press(d)}>
             {d}
           </button>
         ))}
         <span />
-        <button onClick={() => press('0')} disabled={locked}>
+        <button onClick={() => press('0')}>
           0
         </button>
         <button className="pin-sub" onClick={() => setPin((p) => p.slice(0, -1))} aria-label="지우기">
