@@ -383,6 +383,30 @@ h3 {
   font-size: 14px;
   flex-wrap: wrap;
 }
+.h-del {
+  margin-left: auto;
+  border: none;
+  background: transparent;
+  color: #94a3b8;
+  font-size: 13px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  padding: 0;
+  cursor: pointer;
+}
+.h-del:active {
+  background: #fee2e2;
+  color: #ef4444;
+}
+.h-confirm {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #b91c1c;
+}
 .h-date {
   color: var(--sub);
   font-size: 12px;
@@ -798,49 +822,36 @@ details summary {
   overflow: visible;
 }
 .edge-halo {
-  stroke: #fff;
-  stroke-width: 6;
+  stroke: rgba(255, 255, 255, 0.75);
+  stroke-width: 4.5;
   stroke-linecap: round;
   fill: none;
-  opacity: 0.85;
 }
 .edge {
-  stroke: #3d5a8c;
-  stroke-width: 2.4;
+  stroke: #64748b;
+  stroke-width: 1.6;
   stroke-linecap: round;
   fill: none;
+  transition: stroke 0.2s, stroke-width 0.2s;
 }
-.edge.hl {
-  stroke: #2f6bff;
-  stroke-width: 3.2;
-}
-.edge-start {
-  fill: #fff;
-  stroke: #3d5a8c;
-  stroke-width: 2.4;
-}
-.edge-start.ok { stroke: #1f9d63; }
-.edge-start.bad { stroke: #d64545; }
-.edge-start.dead { stroke: #b8c0cc; }
-.edge-start.hl { stroke: #2f6bff; }
-.arrow-head { fill: #3d5a8c; }
-.arrow-head.ok { fill: #1f9d63; }
-.arrow-head.bad { fill: #d64545; }
-.arrow-head.dead { fill: #b8c0cc; }
-.arrow-head.hl { fill: #2f6bff; }
-.edge.ok {
-  stroke: #1f9d63;
-}
-.edge.bad {
-  stroke: #d64545;
-  stroke-dasharray: 5 4;
-}
-.edge.dead {
-  stroke: #b8c0cc;
-  stroke-dasharray: 3 4;
-}
+.edge.ok { stroke: #10b981; stroke-width: 1.8; }
+.edge.bad { stroke: #ef4444; stroke-dasharray: 4 4; }
+.edge.dead { stroke: #cbd5e1; stroke-dasharray: 2 4; }
+.edge.hl { stroke: #3b82f6; stroke-width: 2.2; }
+.edge-g.hl { filter: drop-shadow(0 0 3px rgba(59, 130, 246, 0.45)); }
+.edge-start { fill: #64748b; }
+.edge-start.ok { fill: #10b981; }
+.edge-start.bad { fill: #ef4444; }
+.edge-start.dead { fill: #cbd5e1; }
+.edge-start.hl { fill: #3b82f6; }
+.arrow-head { fill: #64748b; }
+.arrow-head.ok { fill: #10b981; }
+.arrow-head.bad { fill: #ef4444; }
+.arrow-head.dead { fill: #cbd5e1; }
+.arrow-head.hl { fill: #3b82f6; }
 .packet {
-  fill: #1f9d63;
+  fill: #10b981;
+  filter: drop-shadow(0 0 2px rgba(16, 185, 129, 0.7));
 }
 .box {
   position: relative;

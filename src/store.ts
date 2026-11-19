@@ -156,3 +156,17 @@ export function importJson(text: string): Progress | null {
   }
   return null
 }
+
+/** 완료 기록 하나를 지우고, 남은 기록의 "완료 수 반영(counted)"·"복습(review)" 표시를 다시 계산한다 */
+export function deleteCompletion(p: Progress, ts: number): Progress {
+  const rest = p.completions.filter((c) => c.ts !== ts).sort((a, b) => a.ts - b.ts)
+  const seenDay = new Set<string>()
+  const completions = rest.map((c) => {
+    const key = `${c.projectId}|${c.date}`
+    const counted = !seenDay.has(key)
+    seenDay.add(key)
+    const review = rest.some((x) => x.projectId === c.projectId && x.date < c.date)
+    return { ...c, counted, review }
+  })
+  return { ...p, completions }
+}

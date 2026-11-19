@@ -6,6 +6,7 @@ import { STUDY_URL } from '../data/links'
 import officeImg from '../assets/office.webp'
 import {
   bestStars,
+  deleteCompletion,
   doneProjects,
   exportJson,
   importJson,
@@ -65,6 +66,7 @@ export function Home({
   const [showBackup, setShowBackup] = useState(false)
   const [msg, setMsg] = useState<string | null>(null)
   const [askReset, setAskReset] = useState(false)
+  const [delTs, setDelTs] = useState<number | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
   const unlocked = unlockedLevel(progress)
   const tCount = todayCount(progress)
@@ -251,11 +253,33 @@ export function Home({
                 {c.peeked && <span className="pill warn tiny">해설 참고</span>}
                 {!c.counted && <span className="pill tiny">같은 날 반복</span>}
                 {c.counted && c.review && <span className="pill tiny">복습</span>}
+                {delTs === c.ts ? (
+                  <span className="h-confirm">
+                    <span>이 기록을 지울까요?</span>
+                    <button className="ghost small" onClick={() => setDelTs(null)}>
+                      취소
+                    </button>
+                    <button
+                      className="danger small"
+                      onClick={() => {
+                        setProgress(deleteCompletion(progress, c.ts))
+                        setDelTs(null)
+                        setMsg(null)
+                      }}
+                    >
+                      삭제
+                    </button>
+                  </span>
+                ) : (
+                  <button className="h-del" aria-label="이 기록 삭제" onClick={() => setDelTs(c.ts)}>
+                    ✕
+                  </button>
+                )}
               </li>
             )
           })}
         </ul>
-        <p className="muted small-note">같은 프로젝트는 하루에 한 번만 오늘 완료 수에 반영돼요. 다른 날 다시 하면 "복습"으로 다시 집계돼요.</p>
+        <p className="muted small-note">✕를 누르면 기록을 지울 수 있어요. 지운 기록은 오늘 완료 수·연속 학습·달력·별점·승급 계산에서도 빠져요.</p>
       </section>
 
       <section className="card">

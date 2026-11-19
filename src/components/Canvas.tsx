@@ -133,8 +133,18 @@ export function Canvas(p: Props) {
       <svg className="edges">
         <defs>
           {(['base', 'ok', 'bad', 'dead', 'hl'] as const).map((k) => (
-            <marker key={k} id={`arrow-${k}`} viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-              <path d="M0,0 L10,5 L0,10 z" className={`arrow-head ${k}`} />
+            <marker
+              key={k}
+              id={`arrow-${k}`}
+              viewBox="0 0 10 10"
+              refX="8"
+              refY="5"
+              markerWidth="9"
+              markerHeight="9"
+              markerUnits="userSpaceOnUse"
+              orient="auto-start-reverse"
+            >
+              <path d="M0,1 L9,5 L0,9 L2.5,5 z" className={`arrow-head ${k}`} />
             </marker>
           ))}
         </defs>
@@ -142,26 +152,39 @@ export function Canvas(p: Props) {
           const A0 = pos[a]
           const B0 = pos[b]
           if (!A0 || !B0) return null
-          // 아이콘 가장자리에서 시작·끝나도록 선을 잘라 출발점과 도착점이 아이콘에 가려지지 않게 한다
+          // 부드러운 곡선: 세로로 더 멀면 위·아래로, 가로로 더 멀면 좌·우로 빠져나가게 하고 아이콘 가장자리에서 시작·끝낸다
           const dx = B0.x - A0.x
           const dy = B0.y - A0.y
-          const len = Math.hypot(dx, dy) || 1
-          const cut = Math.min(19, len / 3)
-          const A = { x: A0.x + (dx / len) * cut, y: A0.y + (dy / len) * cut }
-          const B = { x: B0.x - (dx / len) * cut, y: B0.y - (dy / len) * cut }
+          const cut = 17
+          const vertical = Math.abs(dy) >= Math.abs(dx) * 0.6 && Math.abs(dy) > cut * 2 + 6
+          let d: string
+          let S: Pt
+          if (vertical) {
+            const sy = Math.sign(dy)
+            S = { x: A0.x, y: A0.y + sy * cut }
+            const E = { x: B0.x, y: B0.y - sy * cut }
+            const m = (E.y - S.y) / 2
+            d = `M${S.x},${S.y} C${S.x},${S.y + m} ${E.x},${E.y - m} ${E.x},${E.y}`
+          } else {
+            const len = Math.hypot(dx, dy) || 1
+            const ux = dx / len
+            const uy = dy / len
+            const cx = Math.min(Math.abs(dx), 60) * Math.sign(dx || 1)
+            S = { x: A0.x + ux * cut * 1.6, y: A0.y + uy * cut }
+            const E = { x: B0.x - ux * cut * 1.6, y: B0.y - uy * cut }
+            d = `M${S.x},${S.y} C${S.x + cx * 0.5},${S.y} ${E.x - cx * 0.5},${E.y} ${E.x},${E.y}`
+          }
           const dead = p.dead?.has(a) || p.dead?.has(b)
           const hl = !p.flow && !!p.highlightNode && (a === p.highlightNode || b === p.highlightNode)
           const state = dead ? 'dead' : p.flow ? p.flow : hl ? 'hl' : 'base'
-          const d = `M${A.x},${A.y} L${B.x},${B.y}`
-          const cls = ['edge', state].join(' ')
           const dots = p.flow === 'ok' && !dead ? Math.min(3, Math.max(1, Math.round((p.load ?? 1) / 3))) : 0
           return (
-            <g key={`${a}-${b}-${i}`}>
+            <g key={`${a}-${b}-${i}`} className={`edge-g ${state}`}>
               <path d={d} className="edge-halo" />
-              <path d={d} className={cls} markerEnd={`url(#arrow-${state})`} />
-              <circle cx={A.x} cy={A.y} r={4} className={`edge-start ${state}`} />
+              <path d={d} className={`edge ${state}`} markerEnd={`url(#arrow-${state})`} />
+              <circle cx={S.x} cy={S.y} r={3} className={`edge-start ${state}`} />
               {Array.from({ length: dots }).map((_, k) => (
-                <circle key={k} r={3.5} className="packet">
+                <circle key={k} r={3} className="packet">
                   <animateMotion dur={`${1.1 + (i % 3) * 0.2}s`} begin={`${k * 0.35}s`} repeatCount="indefinite" path={d} />
                 </circle>
               ))}
