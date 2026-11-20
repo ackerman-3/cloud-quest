@@ -39,4 +39,20 @@ Object.assign(CHARS, {
   delivery: reuse('commerce', '장민재', '빠른식탁 플랫폼 CTO'),
 })
 
+
+// SAA 확장 프로젝트 고객 (기존 외형에 머리색·옷색을 바꿔 구분)
+const look = (from: string, name: string, role: string, o: Partial<CharCfg>): CharCfg => ({ ...CHARS[from], ...o, name, role })
+Object.assign(CHARS, {
+  estate: look('settle', '황보석', '집값노트 서비스개발팀장', { hair: '#4a3b30', top: '#f3efe4', tie: '#6b8e4e', badge: '#6b8e4e' }),
+  scooter: look('survey', '윤채원', '씽씽킥 데이터 플랫폼 리드', { hair: '#2e2a33', jacket: '#2f9e8f', top: '#ffffff' }),
+  codelab: look('edu', '강도윤', '코드랩 CTO', { hair: '#6d4c3d', jacket: '#3b4a6b', top: '#e9eef5' }),
+  clinic: look('bank', '서미경', '온누리내과 원무·전산 실장', { hair: '#5a3a2e', jacket: '#ffffff', top: '#cfe6ef', bottom: '#5a6b7b', legs: '#e9cbb7' }),
+  studio: look('design', '이루다', '무빙컷 스튜디오 기술감독', { hair: '#b2563a', top: '#2f2f38', bottom: '#2f2f38' }),
+  glowup: look('fashion', '최아린', '글로우업 글로벌 플랫폼 리드', { hair: '#8a5a44', jacket: '#f4c6d0', top: '#ffffff', bottom: '#4a4a55' }),
+  battle: look('commerce', '도건우', '배틀로드 서버 디렉터', { hair: '#3b2f6b', jacket: '#1f1f2a', top: '#d63c4e', bottom: '#1f1f2a' }),
+  paybridge: look('city', '한지훈', '페이브릿지 보안 아키텍트', { hair: '#1f2a33', jacket: '#24413a', tie: '#c9a646', badge: '#c9a646' }),
+  precision: look('publisher', '조병철', '대한정밀 정보시스템 부장', { hair: '#cfcfd4', jacket: '#4b5563', tie: '#1f4f8f' }),
+  coupon: look('ticket', '민예린', '쿠폰다모아 백엔드 팀장', { hair: '#d08a3c', jacket: '#7a3cc4', bottom: '#2a2a35' }),
+})
+
 export const ME = { name: '나', role: '신입 아키텍트' }

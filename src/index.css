@@ -2172,3 +2172,11 @@ details summary {
 .with-nav:has(.pin-lock) {
   background: #24365f;
 }
+
+/* 프로젝트 목록 페이지 넘김 */
+.pager { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 14px; flex-wrap: wrap; }
+.pager button { min-width: 36px; height: 36px; border-radius: 10px; border: 1px solid #d8dde6; background: #fff; color: #1b2333; font-weight: 600; font-size: 15px; padding: 0 10px; }
+.pager .pg-num.on { background: #1b2333; border-color: #1b2333; color: #fff; }
+.pager .pg-arrow { font-size: 20px; line-height: 1; }
+.pager button:disabled { opacity: 0.35; }
+.plist { scroll-margin-top: 12px; }

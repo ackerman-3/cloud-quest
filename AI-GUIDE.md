@@ -6,7 +6,7 @@
 ## 1. 앱 개요
 - 신입 아키텍트(플레이어)가 되어 AWS 기반으로 고객 프로젝트를 수행하는 학습 게임.
 - 흐름: 프로젝트 배정(대화) → 고객 미팅(대화) → 솔루션 검토(퀴즈) → 설계·시뮬레이션 → 마무리 대화 → 결과.
-- 프로젝트 21개(쉬움 7, 보통 8, 어려움 6). `data/projects.ts`(1~11번)와 `data/projects2.ts`(12~21번)에 나뉘어 있습니다.
+- 프로젝트 31개(쉬움 7, 보통 13, 어려움 11). `data/projects.ts`(1~11번), `data/projects2.ts`(12~21번), `data/projects3.ts`(22~31번, SAA-C03 주제)에 나뉘어 있습니다.
 - 난이도: **직급 승급형**. 신입 아키텍트(쉬움) 3개 완료 시 주니어(보통) 해금 → 보통 3개 완료 시 시니어(어려움) 해금. 해금 후에는 자유 선택.
 - 완료 집계: **같은 날 같은 프로젝트는 1회만** "오늘 완료"에 반영. 다른 날 다시 하면 "복습"으로 다시 집계.
 - 별점: 3개에서 시작, 해설(정답) 보면 −1, 시뮬레이션 4회 이상 실행 시 −1, 최소 1개.
@@ -84,3 +84,9 @@ scripts/check-answers.ts  정답 자동 점검
   - 선물 대상: 케이 팀장(커피·디저트 좋아함, 차분하고 칭찬에 인색하지 않음)·변의주 선배(책·다육이·귤, 조용하고 조곤조곤 다정함, 같이 성장하는 것을 좋아함)·니콜라스 동기(간식·스포츠음료·치킨, 먹는 것과 운동을 좋아하는 활발한 성격, 아메리카노 싫어함). 호감도 50·150·300에서 에피소드 1~3 해금(`components/Gifts.tsx`).
 - 화면 구조(2026-11-20): 하단 메뉴바 4탭 — 🏠 홈(현황: 직급·골드·오늘 완료·연속 학습·다음 추천·승급 현황·최근 7일), 📋 프로젝트, 🎁 선물, 📅 기록(학습 달력·최근 완료 내역·설정/백업). App.tsx `tab` 상태, 문제 풀이·결과·에피소드 화면에서는 메뉴바 숨김.
 - 선물 탭 관리자 비밀번호(2026-11-20): `components/PinLock.tsx`, 4자리 고정. 코드에는 해시만 있음(비밀번호 변경은 `npx tsx scripts/pin-hash.ts <새 번호>` 출력값으로 ADMIN_SHA256·ADMIN_FNV 교체). 선물 탭을 벗어나거나 앱을 내리면 다시 잠김. 틀리면 들어가지 못할 뿐 횟수 제한·대기 없음. 공개 저장소·4자리라 가벼운 잠금으로만 사용.
+
+## 8. 2026-11-21 변경 — SAA-C03 프로젝트 10개 추가 (`data/projects3.ts`)
+- 주니어(보통) 5: 읽기 전용 복제본 vs Multi-AZ(집값노트), Kinesis Data Streams 샤드·순서(씽씽킥), EventBridge 예약·CloudWatch 경보·구매 옵션(코드랩), 미리 서명된 URL·SSE-KMS(온누리내과), 스팟+SQS 배치(무빙컷).
+- 시니어(어려움) 5: DynamoDB 글로벌 테이블+Route 53 지연 시간 라우팅(글로우업), Global Accelerator+NLB(배틀로드), PrivateLink(페이브릿지), AWS Backup Vault Lock·교차 계정/리전(대한정밀), RDS Proxy·예약된 동시성(쿠폰다모아).
+- 프로젝트마다 퀴즈 2개. 서비스 12개 추가(services.ts: rdsRead, rdsproxy, kinesis, eventbridge, cloudwatch, kms, ec2Spot, ga, nlb, epsvc, vpceIf, backup). 공식 아이콘 7개 추가(kinesis, eventbridge, cloudwatch, kms, ga, privatelink, backup), 나머지는 Canvas.tsx `ICON_ALIAS`로 기존 아이콘 재사용.
+- 고객 10명은 기존 외형에 머리색·옷색을 바꾼 `look()`으로 만듦(characters.ts).

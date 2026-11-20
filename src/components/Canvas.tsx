@@ -12,7 +12,7 @@ const AWS_ICONS = Object.fromEntries(
   ]),
 )
 // 같은 서비스를 다른 역할로 쓰는 id
-const ICON_ALIAS: Record<string, string> = { ec2Web: 'ec2', ec2Worker: 'ec2', rdsStandby: 'rds', rdsReplica: 'rds' }
+const ICON_ALIAS: Record<string, string> = { ec2Web: 'ec2', ec2Worker: 'ec2', ec2Spot: 'ec2', rdsStandby: 'rds', rdsReplica: 'rds', rdsRead: 'rds', rdsproxy: 'rds', nlb: 'alb', epsvc: 'privatelink', vpceIf: 'privatelink' }
 
 export function SvcIcon({ id, size = 26 }: { id: string; size?: number }) {
   const s = svc(id)

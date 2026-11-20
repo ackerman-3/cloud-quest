@@ -5,6 +5,8 @@ import { Sprite } from './Sprite'
 import { STUDY_URL } from '../data/links'
 import { FRIENDS, GOLD } from '../data/rewards'
 import officeImg from '../assets/office.webp'
+
+const PAGE_SIZE = 5
 import {
   affinity,
   bestStars,
@@ -117,6 +119,9 @@ export function Home({
   onTab: (t: 'projects' | 'records') => void
 }) {
   const [tab, setTab] = useState<1 | 2 | 3>(unlockedLevel(progress))
+  // 난이도별 프로젝트 목록 페이지(한 페이지 5개). 난이도 탭마다 보던 페이지를 기억한다.
+  const [pages, setPages] = useState<Record<number, number>>({ 1: 0, 2: 0, 3: 0 })
+  const listTop = useRef<HTMLUListElement>(null)
   const [showBackup, setShowBackup] = useState(false)
   const [msg, setMsg] = useState<string | null>(null)
   const [askReset, setAskReset] = useState(false)
@@ -298,8 +303,18 @@ export function Home({
             🔒 {LEVELS[tab - 2].diff} 프로젝트를 {LEVELS[tab - 1].need}건 완료하면 "{LEVELS[tab - 1].name}"로 승급해 열려요.
           </p>
         )}
-        <ul className="plist">
-          {PROJECTS.filter((p) => p.level === tab).map((p) => {
+        {(() => {
+          const all = PROJECTS.filter((p) => p.level === tab)
+          const pageCount = Math.max(1, Math.ceil(all.length / PAGE_SIZE))
+          const page = Math.min(pages[tab] ?? 0, pageCount - 1)
+          const go = (n: number) => {
+            setPages((x) => ({ ...x, [tab]: n }))
+            listTop.current?.scrollIntoView({ block: 'start', behavior: 'smooth' })
+          }
+          return (
+            <>
+        <ul className="plist" ref={listTop}>
+          {all.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE).map((p) => {
             const stars = bestStars(progress, p.id)
             const locked = p.level > unlocked
             const doneToday = progress.completions.some((c) => c.projectId === p.id && c.date === today())
@@ -325,6 +340,24 @@ export function Home({
             )
           })}
         </ul>
+        {pageCount > 1 && (
+          <div className="pager">
+            <button className="pg-arrow" disabled={page === 0} onClick={() => go(page - 1)} aria-label="이전 페이지">
+              ‹
+            </button>
+            {Array.from({ length: pageCount }, (_, i) => (
+              <button key={i} className={`pg-num ${i === page ? 'on' : ''}`} onClick={() => go(i)}>
+                {i + 1}
+              </button>
+            ))}
+            <button className="pg-arrow" disabled={page === pageCount - 1} onClick={() => go(page + 1)} aria-label="다음 페이지">
+              ›
+            </button>
+          </div>
+        )}
+            </>
+          )
+        })()}
       </section>
 
       )}
