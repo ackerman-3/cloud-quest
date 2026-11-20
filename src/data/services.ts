@@ -77,6 +77,15 @@ export const SERVICES: Record<string, Service> = Object.fromEntries(
       { id: 'epsvc', name: 'VPC 엔드포인트 서비스 (PrivateLink)', short: 'EPS', cat: 'network', scope: 'vpcEdge', desc: 'NLB 뒤의 서비스를 다른 VPC·계정에 사설 제공', cost: 1 },
       { id: 'vpceIf', name: '인터페이스 VPC 엔드포인트', short: 'VPCE·I', cat: 'network', scope: 'subnet', desc: '내 서브넷의 사설 IP(ENI)로 다른 서비스 호출', cost: 1 },
       { id: 'backup', name: 'AWS Backup', short: 'BAK', cat: 'storage', scope: 'region', desc: '여러 서비스 백업을 계획·볼트로 중앙 관리, 교차 리전·계정 복사', cost: 1 },
+      // 신입 보강 (프로젝트 32~36)
+      { id: 'nacl', name: '네트워크 ACL', short: 'NACL', cat: 'security', scope: 'subnet', desc: '서브넷 단위 방화벽. 허용·거부 규칙, 상태 비저장', cost: 0 },
+      { id: 's3it', name: 'S3 Intelligent-Tiering', short: 'S3·IT', cat: 'storage', scope: 'region', desc: '접근 빈도에 따라 계층 자동 이동, 검색 요금 없음', cost: 1 },
+      { id: 's3ia', name: 'S3 Standard-IA', short: 'S3·IA', cat: 'storage', scope: 'region', desc: '가끔 읽는 데이터, 여러 AZ 저장, 검색 요금·최소 30일', cost: 1 },
+      { id: 's3onezone', name: 'S3 One Zone-IA', short: 'S3·1Z', cat: 'storage', scope: 'region', desc: '한 AZ에만 저장해 더 저렴, 다시 만들 수 있는 데이터용', cost: 0 },
+      { id: 'iamrole', name: 'IAM 역할', short: 'ROLE', cat: 'security', scope: 'global', desc: 'AWS 서비스·사용자에게 임시 자격 증명으로 권한 부여', cost: 0 },
+      { id: 'accesskey', name: 'IAM 사용자 액세스 키', short: 'KEY', cat: 'security', scope: 'global', desc: '장기 자격 증명. 코드·파일에 넣으면 유출 위험', cost: 0 },
+      { id: 'cloudtrail', name: 'CloudTrail', short: 'CT', cat: 'integration', scope: 'region', desc: '누가 언제 어떤 API를 호출했는지 기록', cost: 0 },
+      { id: 'config', name: 'AWS Config', short: 'CFG', cat: 'integration', scope: 'region', desc: '리소스 구성 변경 이력 기록, 규칙 위반 감지', cost: 0 },
       { id: 'vpcB', name: 'VPC (다른 부서)', short: 'VPC', cat: 'network', scope: 'fixed', desc: '다른 부서 VPC', cost: 0 },
     ] as Service[]
   ).map((s) => [s.id, s]),

@@ -54,5 +54,12 @@ Object.assign(CHARS, {
   precision: look('publisher', '조병철', '대한정밀 정보시스템 부장', { hair: '#cfcfd4', jacket: '#4b5563', tie: '#1f4f8f' }),
   coupon: look('ticket', '민예린', '쿠폰다모아 백엔드 팀장', { hair: '#d08a3c', jacket: '#7a3cc4', bottom: '#2a2a35' }),
 })
+Object.assign(CHARS, {
+  bakery: look('flower', '오유진', '밀가루공방 사장', { hair: '#3b2a24', jacket: '#e8c58f', top: '#fff8ec' }),
+  wedding: look('design', '백하은', '스튜디오 화이트데이 실장', { hair: '#d9b07a', top: '#f3e9f1', bottom: '#6b5a70' }),
+  mall: look('survey', '정태민', '모아몰 개발팀장', { hair: '#2a2a2a', jacket: '#3c6fb4', top: '#f2f2f2' }),
+  academy: look('city', '문서현', '한빛어학원 전산 담당', { hair: '#5a3b2c', jacket: '#7a4b8f', tie: '#c9a646' }),
+  logistics: look('settle', '나준혁', '한결물류 IT 팀장', { hair: '#3a3a3a', top: '#e9f0e6', tie: '#3a7d44', badge: '#3a7d44' }),
+})
 
 export const ME = { name: '나', role: '신입 아키텍트' }

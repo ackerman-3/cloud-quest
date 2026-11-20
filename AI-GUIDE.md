@@ -6,7 +6,8 @@
 ## 1. 앱 개요
 - 신입 아키텍트(플레이어)가 되어 AWS 기반으로 고객 프로젝트를 수행하는 학습 게임.
 - 흐름: 프로젝트 배정(대화) → 고객 미팅(대화) → 솔루션 검토(퀴즈) → 설계·시뮬레이션 → 마무리 대화 → 결과.
-- 프로젝트 31개(쉬움 7, 보통 13, 어려움 11). `data/projects.ts`(1~11번), `data/projects2.ts`(12~21번), `data/projects3.ts`(22~31번, SAA-C03 주제)에 나뉘어 있습니다.
+- 프로젝트 36개(쉬움 12, 보통 13, 어려움 11). `data/projects.ts`(1~11번), `data/projects2.ts`(12~21번), `data/projects3.ts`(22~31번), `data/projects4.ts`(32~36번, 신입 보강)에 나뉘어 있습니다.
+- 콘텐츠 방향: 이 게임의 목적은 SAA-C03 취득. 퀴즈는 기출처럼 "요구 사항 → 가장 알맞은/비용 효율적인/운영 부담이 적은 방법" 형식과 자주 나오는 함정 보기를 따르되, 기출 문장을 그대로 옮기지 않고 새 시나리오로 씁니다.
 - 난이도: **직급 승급형**. 신입 아키텍트(쉬움) 3개 완료 시 주니어(보통) 해금 → 보통 3개 완료 시 시니어(어려움) 해금. 해금 후에는 자유 선택.
 - 완료 집계: **같은 날 같은 프로젝트는 1회만** "오늘 완료"에 반영. 다른 날 다시 하면 "복습"으로 다시 집계.
 - 별점: 3개에서 시작, 해설(정답) 보면 −1, 시뮬레이션 4회 이상 실행 시 −1, 최소 1개.
@@ -90,3 +91,8 @@ scripts/check-answers.ts  정답 자동 점검
 - 시니어(어려움) 5: DynamoDB 글로벌 테이블+Route 53 지연 시간 라우팅(글로우업), Global Accelerator+NLB(배틀로드), PrivateLink(페이브릿지), AWS Backup Vault Lock·교차 계정/리전(대한정밀), RDS Proxy·예약된 동시성(쿠폰다모아).
 - 프로젝트마다 퀴즈 2개. 서비스 12개 추가(services.ts: rdsRead, rdsproxy, kinesis, eventbridge, cloudwatch, kms, ec2Spot, ga, nlb, epsvc, vpceIf, backup). 공식 아이콘 7개 추가(kinesis, eventbridge, cloudwatch, kms, ga, privatelink, backup), 나머지는 Canvas.tsx `ICON_ALIAS`로 기존 아이콘 재사용.
 - 고객 10명은 기존 외형에 머리색·옷색을 바꾼 `look()`으로 만듦(characters.ts).
+
+## 9. 2026-11-21 변경 — 신입 프로젝트 5개 추가 (`data/projects4.ts`)
+- 네트워크 ACL 거부 vs 보안 그룹(밀가루공방), S3 스토리지 클래스 Intelligent-Tiering·One Zone-IA·Deep Archive(화이트데이), IAM 역할·그룹·최소 권한(모아몰), CloudTrail·Config·CloudWatch 구분(한빛어학원), VPC CIDR /16~/28·서브넷 예약 5개·AZ별 NAT(한결물류).
+- 서비스 8개 추가(nacl, s3it, s3ia, s3onezone, iamrole, accesskey, cloudtrail, config). 공식 아이콘 3개(iamrole, cloudtrail, config), S3 클래스는 s3 아이콘 재사용, nacl은 글자 아이콘.
+- 꽃집 프로젝트 정답 해설에 퍼블릭 IP·IGW 변환 설명 한 줄 추가(참고서 '그림으로 배우는 AWS 구조' p.170 표현과 연결).

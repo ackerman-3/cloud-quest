@@ -1,6 +1,7 @@
 import type { Box, Project, Result, Scope } from '../types'
 import { PROJECTS2 } from './projects2'
 import { PROJECTS3 } from './projects3'
+import { PROJECTS4 } from './projects4'
 
 // ── 작은 도우미 ─────────────────────────────────────────────
 const B = (id: string, kind: Box['kind'], label: string, children: Box[] = [], dir: 'row' | 'col' = 'col'): Box => ({
@@ -115,6 +116,7 @@ const p1: Project = {
     },
     answerNote: [
       '사용자 → 인터넷 게이트웨이 → 퍼블릭 서브넷의 EC2 → 프라이빗 서브넷의 RDS 순서로 연결합니다.',
+      '퍼블릭 서브넷에 있어도 EC2에 퍼블릭 IP(또는 탄력적 IP)가 있어야 인터넷과 통신해요. 인터넷 게이트웨이가 퍼블릭 IP ↔ 프라이빗 IP 변환을 맡아요.',
       'ALB와 NAT 게이트웨이는 시간당 요금이 붙어요. 서버 한 대짜리 작은 사이트에는 아직 필요 없습니다.',
       '실제 구축 시 RDS는 단일 AZ 배포라도 DB 서브넷 그룹에 2개 이상 AZ의 서브넷을 등록해야 해요. 여기서는 그림을 단순화했습니다.',
     ],
@@ -1806,7 +1808,7 @@ const p11: Project = {
   ],
 }
 
-export const PROJECTS: Project[] = [p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, ...PROJECTS2, ...PROJECTS3]
+export const PROJECTS: Project[] = [p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, ...PROJECTS2, ...PROJECTS3, ...PROJECTS4]
 
 export const LEVELS = [
   { level: 1 as const, name: '신입 아키텍트', diff: '쉬움', need: 0 },
