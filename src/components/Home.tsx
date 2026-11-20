@@ -1,4 +1,6 @@
 import { useRef, useState } from 'react'
+import { NoteSheet } from './Study'
+import { noteForProject } from '../data/notes'
 import { LEVELS, PROJECTS } from '../data/projects'
 import { CHARS } from '../data/characters'
 import { Sprite } from './Sprite'
@@ -122,6 +124,8 @@ export function Home({
   // 난이도별 프로젝트 목록 페이지(한 페이지 5개). 난이도 탭마다 보던 페이지를 기억한다.
   const [pages, setPages] = useState<Record<number, number>>({ 1: 0, 2: 0, 3: 0 })
   const listTop = useRef<HTMLUListElement>(null)
+  const [noteOf, setNoteOf] = useState<string | null>(null)
+  const sheetNote = noteOf ? noteForProject(noteOf) : undefined
   const [showBackup, setShowBackup] = useState(false)
   const [msg, setMsg] = useState<string | null>(null)
   const [askReset, setAskReset] = useState(false)
@@ -169,6 +173,7 @@ export function Home({
 
   return (
     <div className="home">
+      {sheetNote && <NoteSheet note={sheetNote} onClose={() => setNoteOf(null)} />}
       {section === 'home' && (
         <>
       <section className="hero">
@@ -336,6 +341,12 @@ export function Home({
                     {doneToday && <span className="tag-today">오늘 완료</span>}
                   </div>
                 </button>
+                {noteForProject(p.id) && (
+                  <button className="note-chip" onClick={() => setNoteOf(p.id)} aria-label={`개념보기: ${noteForProject(p.id)!.title}`}>
+                    <span>📘</span>
+                    <small>개념보기</small>
+                  </button>
+                )}
               </li>
             )
           })}

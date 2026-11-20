@@ -4,6 +4,7 @@ import { Play } from './components/Play'
 import { Sprite } from './components/Sprite'
 import { Gifts, EpisodeHeader } from './components/Gifts'
 import { Talk } from './components/Talk'
+import { Study } from './components/Study'
 import { PinLock } from './components/PinLock'
 import { ATTEND_GOLD, FRIENDS, GOLD, type Episode } from './data/rewards'
 import { PROJECTS, LEVELS } from './data/projects'
@@ -27,7 +28,7 @@ import {
   type Session,
 } from './store'
 
-type Tab = 'home' | 'projects' | 'gift' | 'records'
+type Tab = 'home' | 'projects' | 'study' | 'gift' | 'records'
 
 type View =
   | { v: 'home' }
@@ -219,6 +220,8 @@ export default function App() {
             window.scrollTo(0, 0)
           }}
         />
+      ) : tab === 'study' ? (
+        <Study onStart={start} unlocked={unlockedLevel(progress)} />
       ) : (
         <Home
           section={tab}
@@ -241,6 +244,7 @@ export default function App() {
           [
             ['home', '🏠', '홈'],
             ['projects', '📋', '프로젝트'],
+            ['study', '📘', '학습'],
             ['gift', '🎁', '선물'],
             ['records', '📅', '기록'],
           ] as const

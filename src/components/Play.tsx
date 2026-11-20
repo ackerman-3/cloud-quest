@@ -4,6 +4,8 @@ import { Talk } from './Talk'
 import { QuizView } from './QuizView'
 import { Designer } from './Designer'
 import { saveSession, type Session } from '../store'
+import { NoteSheet } from './Study'
+import { noteForProject } from '../data/notes'
 
 function stepLabel(p: Project, i: number) {
   const s = p.steps[i]
@@ -28,6 +30,8 @@ export function Play({
   const [design, setDesign] = useState<Design>(resume?.design ?? { nodes: [], edges: [] })
   const [peeked, setPeeked] = useState(resume?.peeked ?? false)
   const [simRuns, setSimRuns] = useState(resume?.simRuns ?? 0)
+  const [noteOpen, setNoteOpen] = useState(false)
+  const note = noteForProject(project.id)
 
   useEffect(() => {
     saveSession({ projectId: project.id, step, design, peeked, simRuns, savedAt: Date.now() })
@@ -50,6 +54,7 @@ export function Play({
 
   return (
     <div className="play">
+      {noteOpen && note && <NoteSheet note={note} onClose={() => setNoteOpen(false)} />}
       <header className="play-head">
         <button className="ghost small" onClick={onExit}>
           ← 메인으로
@@ -59,6 +64,11 @@ export function Play({
           <b>{project.title}</b>
         </div>
         {peeked && <span className="pill warn">해설 참고</span>}
+        {note && (
+          <button className="ghost small note-btn" onClick={() => setNoteOpen(true)} title={note.title}>
+            📘 개념
+          </button>
+        )}
       </header>
       <ol className="steps">
         {labels.map((l) => (

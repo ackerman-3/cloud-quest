@@ -256,6 +256,8 @@ const MAP: Record<string, keyof typeof g> = {
   vpcB: 'vpc',
 }
 
+export const hasGlyph = (id: string) => !!MAP[id]
+
 export function Glyph({ id }: { id: string }) {
   const k = MAP[id]
   if (!k) return null

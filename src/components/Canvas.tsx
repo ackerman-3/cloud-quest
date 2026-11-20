@@ -2,7 +2,7 @@ import { useLayoutEffect, useRef, useState } from 'react'
 import type { Box, Design, DesignSpec, PNode } from '../types'
 import { CAT_COLOR, svc } from '../data/services'
 import { allEdges, allNodes } from '../engine'
-import { Glyph } from './glyphs'
+import { Glyph, hasGlyph } from './glyphs'
 
 // AWS 공식 아키텍처 아이콘(Architecture-Service-Icons_07312025, 48px). 파일 이름 = 서비스 id
 const AWS_ICONS = Object.fromEntries(
@@ -24,7 +24,7 @@ export function SvcIcon({ id, size = 26 }: { id: string; size?: number }) {
         <img src={official} alt="" draggable={false} />
       </span>
     )
-  const glyph = !emoji && <Glyph id={id} />
+  const glyph = !emoji && hasGlyph(id) && <Glyph id={id} />
   const c = CAT_COLOR[s.cat]
   return (
     <span
