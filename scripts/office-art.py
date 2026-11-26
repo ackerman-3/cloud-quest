@@ -409,9 +409,11 @@ def photo(name, frame, bg, ground, draw):
     cv.rect(6,13,4,1,'d'); cv.outline(); save(name,cv)
 def fig(cv,x,y,hair,top):
     cv.rect(x,y,2,2,'C'); cv.hline(x,y-1,2,hair); cv.rect(x,y+2,2,3,top)
-def ep_lead1(cv):     # 프린터 앞 인증샷: 프린터 + 종이 든 팀장
-    cv.rect(2,5,6,5,'g'); cv.hline(2,5,6,'w'); cv.rect(3,4,4,1,'w'); cv.hline(3,7,4,'e')
-    fig(cv,10,4,'K','B'); cv.rect(12,6,2,2,'i')
+def ep_lead1(cv):     # 마감 전날 밤의 커피: 밤 창문 + 커피잔 세 개
+    cv.rect(1,1,14,7,'n'); cv.set(4,3,'z'); cv.set(11,2,'z'); cv.set(8,4,'i')
+    for (x,c) in ((2,'w'),(6,'B'),(10,'p')):
+        cv.rect(x,8,3,3,c); cv.set(x+3,9,c); cv.hline(x,8,3,'c')
+    cv.set(3,6,'g'); cv.set(7,5,'g'); cv.set(11,6,'g')
 def ep_senior1(cv):   # 점심 산책길: 남산 타워 + 길
     cv.ell(10,8,5,3,'a'); cv.vline(10,2,5,'S'); cv.rect(9,4,3,1,'S'); cv.line(3,12,6,8,'o'); cv.line(4,12,7,8,'o')
     fig(cv,3,5,'c','g')
