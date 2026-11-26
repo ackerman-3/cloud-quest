@@ -10,6 +10,7 @@ import { ATTEND_GOLD, FRIENDS, GOLD, PRACTICE_RATE, type Episode } from './data/
 import { PROJECTS, LEVELS } from './data/projects'
 import { CHARS } from './data/characters'
 import { STUDY_URL } from './data/links'
+import { applyUpdate, checkUpdate } from './update'
 import {
   affinity,
   checkIn,
@@ -83,6 +84,22 @@ export default function App() {
     document.addEventListener('visibilitychange', onVis)
     return () => document.removeEventListener('visibilitychange', onVis)
   }, [])
+
+  // 새 버전 확인: 앱을 열거나 다시 화면에 돌아올 때. 프로젝트 진행 중에는 기다렸다가 메인으로 나오면 새로고침
+  const [newVersion, setNewVersion] = useState<string | null>(null)
+  useEffect(() => {
+    const check = () => {
+      checkUpdate().then((v) => v && setNewVersion(v))
+    }
+    check()
+    const onVis = () => document.visibilityState === 'visible' && check()
+    document.addEventListener('visibilitychange', onVis)
+    return () => document.removeEventListener('visibilitychange', onVis)
+  }, [])
+  const busy = view.v === 'play' || view.v === 'episode'
+  useEffect(() => {
+    if (newVersion && !busy) applyUpdate(newVersion)
+  }, [newVersion, busy])
 
   useEffect(() => {
     if (!notice) return
