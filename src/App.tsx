@@ -6,7 +6,7 @@ import { Gifts, EpisodeHeader } from './components/Gifts'
 import { Talk } from './components/Talk'
 import { Study } from './components/Study'
 import { PinLock } from './components/PinLock'
-import { ATTEND_GOLD, FRIENDS, GOLD, type Episode } from './data/rewards'
+import { ATTEND_GOLD, FRIENDS, GOLD, PRACTICE_RATE, type Episode } from './data/rewards'
 import { PROJECTS, LEVELS } from './data/projects'
 import { CHARS } from './data/characters'
 import { STUDY_URL } from './data/links'
@@ -19,11 +19,15 @@ import {
   loadProgress,
   loadSession,
   recordCompletion,
+  recordPractice,
+  practiceGold,
   saveProgress,
   saveSession,
   todayCount,
   unlockedLevel,
   type Completion,
+  type Practice,
+  type PracticeKind,
   type Progress,
   type Session,
 } from './store'
@@ -32,7 +36,8 @@ type Tab = 'home' | 'projects' | 'study' | 'gift' | 'records'
 
 type View =
   | { v: 'home' }
-  | { v: 'play'; id: string; resume?: Session | null }
+  | { v: 'play'; id: string; resume?: Session | null; only?: PracticeKind }
+  | { v: 'practiceResult'; id: string; x: Practice }
   | { v: 'result'; id: string; c: Completion; levelUp: number | null }
   | { v: 'episode'; friend: string; ep: Episode }
 
@@ -98,6 +103,48 @@ export default function App() {
     window.scrollTo(0, 0)
   }
 
+  const practice = (id: string, kind: PracticeKind) => {
+    setView({ v: 'play', id, only: kind })
+    window.scrollTo(0, 0)
+  }
+
+  if (view.v === 'practiceResult') {
+    const project = PROJECTS.find((p) => p.id === view.id)!
+    const g = practiceGold(view.x)
+    const kindName = view.x.kind === 'quiz' ? '퀴즈' : '구성도'
+    return (
+      <div className="result">
+        <div className="result-card">
+          <Sprite cfg={CHARS[project.client]} className="result-sprite" talking={false} />
+          <div className="kicker">{kindName} 다시 하기 완료</div>
+          <h1>{project.title}</h1>
+          {view.x.peeked && <p className="muted">해설을 참고했어요. 보상은 절반만 받아요.</p>}
+          <div className="result-gold">
+            {g > 0 ? (
+              <div>
+                💰 <b>+{g.toLocaleString('ko-KR')}{GOLD}</b> 획득 (다시 하기 보상)
+              </div>
+            ) : (
+              <div>오늘 이미 이 프로젝트의 {kindName}를 다시 해서 골드는 지급되지 않았어요.</div>
+            )}
+            <small>보유 {goldBalance(progress).toLocaleString('ko-KR')}{GOLD}</small>
+          </div>
+          <p className="muted small-note">
+            다시 하기는 오늘 완료 수·별점·승급에는 반영되지 않아요. 보상은 프로젝트 기본 골드의 {Math.round(PRACTICE_RATE[view.x.kind] * 100)}%예요.
+          </p>
+          <div className="row-center">
+            <button className="ghost" onClick={() => goTab('projects')}>
+              프로젝트 목록
+            </button>
+            <button className="primary" onClick={() => practice(project.id, view.x.kind)}>
+              한 번 더 하기
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   if (view.v === 'episode') {
     const back = () => {
       setProgress(markEpisodeSeen(progress, view.ep.id))
@@ -118,11 +165,19 @@ export default function App() {
       <Play
         project={project}
         resume={view.resume}
+        only={view.only}
         onExit={() => {
           setSession(loadSession())
-          goTab('home')
+          goTab(view.only ? 'projects' : 'home')
         }}
         onFinish={({ stars, peeked }) => {
+          if (view.only) {
+            const { next, practice: x } = recordPractice(progress, project.id, view.only, peeked)
+            setProgress(next)
+            setView({ v: 'practiceResult', id: project.id, x })
+            window.scrollTo(0, 0)
+            return
+          }
           const before = unlockedLevel(progress)
           const { next, completion } = recordCompletion(progress, project.id, stars, peeked)
           setProgress(next)
@@ -231,6 +286,7 @@ export default function App() {
           setProgress={setProgress}
           session={session}
           onStart={start}
+          onPractice={practice}
           onResume={() => session && setView({ v: 'play', id: session.projectId, resume: session })}
           onReset={() => {
             saveSession(null)

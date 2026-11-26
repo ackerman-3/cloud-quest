@@ -1,5 +1,5 @@
 import { PROJECTS, LEVELS } from './data/projects'
-import { ATTEND_GOLD, LEVEL_GOLD, REVIEW_RATE, STAR_BONUS } from './data/rewards'
+import { ATTEND_GOLD, LEVEL_GOLD, PRACTICE_PEEK_RATE, PRACTICE_RATE, REVIEW_RATE, STAR_BONUS } from './data/rewards'
 import type { Design } from './types'
 
 // ⚠️ 저장 키 이름과 형식을 바꾸면 기존 기록이 사라질 수 있습니다.
@@ -27,6 +27,19 @@ export interface Progress {
   gifts?: GiftLog[]
   /** 본 특별 에피소드 id */
   seenEpisodes?: string[]
+  /** 클리어한 프로젝트의 퀴즈·구성도만 다시 한 기록(완료 수·별·승급에는 반영 안 함) */
+  practices?: Practice[]
+}
+
+export type PracticeKind = 'quiz' | 'design'
+
+export interface Practice {
+  projectId: string
+  kind: PracticeKind
+  date: string
+  ts: number
+  peeked: boolean
+  counted: boolean // 같은 날 같은 프로젝트·같은 종류는 1회만 보상
 }
 
 export interface GiftLog {
@@ -115,6 +128,19 @@ export function recordCompletion(p: Progress, projectId: string, stars: number, 
   return { next: { ...p, completions: [...p.completions, c] }, completion: c }
 }
 
+/** 이미 한 번이라도 끝까지 완료한 프로젝트인지 */
+export function isCleared(p: Progress, projectId: string) {
+  return p.completions.some((c) => c.projectId === projectId)
+}
+
+/** 퀴즈·구성도만 다시 하기 기록 */
+export function recordPractice(p: Progress, projectId: string, kind: PracticeKind, peeked: boolean) {
+  const d = today()
+  const counted = !(p.practices ?? []).some((x) => x.projectId === projectId && x.kind === kind && x.date === d && x.counted)
+  const pr: Practice = { projectId, kind, date: d, ts: Date.now(), peeked, counted }
+  return { next: { ...p, practices: [...(p.practices ?? []), pr] }, practice: pr }
+}
+
 export function todayCount(p: Progress) {
   const d = today()
   return p.completions.filter((c) => c.date === d && c.counted).length
@@ -198,8 +224,20 @@ export function completionGold(c: Completion) {
   return Math.round(base * (c.review ? REVIEW_RATE : 1)) + STAR_BONUS * Math.max(0, c.stars - 1)
 }
 
+/** 다시 하기 보상: 기본 골드 × 종류별 비율(해설 보면 절반). 같은 날 반복은 0 */
+export function practiceGold(x: Practice) {
+  if (!x.counted) return 0
+  const p = PROJECTS.find((y) => y.id === x.projectId)
+  if (!p) return 0
+  return Math.round(LEVEL_GOLD[p.level] * PRACTICE_RATE[x.kind] * (x.peeked ? PRACTICE_PEEK_RATE : 1))
+}
+
 export function goldEarned(p: Progress) {
-  return p.completions.reduce((s, c) => s + completionGold(c), 0) + (p.attendance?.length ?? 0) * ATTEND_GOLD
+  return (
+    p.completions.reduce((s, c) => s + completionGold(c), 0) +
+    (p.practices ?? []).reduce((s, x) => s + practiceGold(x), 0) +
+    (p.attendance?.length ?? 0) * ATTEND_GOLD
+  )
 }
 
 export function goldSpent(p: Progress) {

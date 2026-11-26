@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { Design, PNode, Project } from '../types'
 import { Canvas, SvcIcon } from './Canvas'
 import { SCOPE_HINT, svc } from '../data/services'
-import { costIndex, deadSet, diffWithAnswer, findBox, gradeDesign, runScenarios } from '../engine'
+import { costIndex, deadSet, diffWithAnswer, findBox, gradeDesign, isLoose, looseId, runScenarios } from '../engine'
 
 interface Props {
   project: Project
@@ -33,6 +33,8 @@ export function Designer({ project, design, setDesign, peeked, onPeek, simRuns, 
   const [ghost, setGhost] = useState<{ x: number; y: number; service: string } | null>(null)
   const [hoverZone, setHoverZone] = useState<string | null>(null)
   const [grading, setGrading] = useState(false)
+  const [notice, setNotice] = useState<string | null>(null)
+  const [selEdge, setSelEdge] = useState<string | null>(null)
   const drag = useRef<{ d: Drag; x0: number; y0: number; moved: boolean; canMove: boolean } | null>(null)
   const toastTimer = useRef<number>(0)
 
@@ -43,6 +45,7 @@ export function Designer({ project, design, setDesign, peeked, onPeek, simRuns, 
   }
 
   const nodeName = (id: string) => {
+    if (isLoose(id)) return '(삭제된 서비스)'
     const n = [...spec.fixed, ...design.nodes].find((x) => x.id === id)
     return n ? (n.label ?? svc(n.service).name) : id
   }
@@ -73,22 +76,36 @@ export function Designer({ project, design, setDesign, peeked, onPeek, simRuns, 
     setDesign({ ...design, nodes: design.nodes.map((n) => (n.id === node.id ? { ...n, zone: zoneId } : n)) })
   }
 
+  // 서비스 삭제: 반대쪽이 남아 있는 선은 남기고(끝만 빈자리로), 양쪽이 모두 지워진 선만 지운다
   const remove = (id: string) => {
+    const node = design.nodes.find((n) => n.id === id)
+    if (!node) return
+    const loose = looseId(node.zone, id)
     setDesign({
       nodes: design.nodes.filter((n) => n.id !== id),
-      edges: design.edges.filter(([a, b]) => a !== id && b !== id),
+      edges: design.edges
+        .map(([a, b]) => [a === id ? loose : a, b === id ? loose : b] as [string, string])
+        .filter(([a, b]) => !(isLoose(a) && isLoose(b))),
     })
     setSelNode(null)
+    setSelEdge(null)
+    if (from === id) setFrom(null)
+  }
+
+  const removeEdge = (a: string, b: string) => {
+    setDesign({ ...design, edges: design.edges.filter(([x, y]) => !(x === a && y === b)) })
+    setSelEdge(null)
+    say('연결을 지웠어요.')
   }
 
   const toggleEdge = (a: string, b: string) => {
     const fixedHas = (spec.fixedEdges ?? []).some(([x, y]) => (x === a && y === b) || (x === b && y === a))
     if (fixedHas) return say('기본으로 연결된 선이에요.')
-    const has = design.edges.some(([x, y]) => (x === a && y === b) || (x === b && y === a))
-    setDesign({
-      ...design,
-      edges: has ? design.edges.filter(([x, y]) => !((x === a && y === b) || (x === b && y === a))) : [...design.edges, [a, b]],
-    })
+    // 이미 연결된 두 요소를 다시 이으면 선을 지운다(선의 × 로도 지울 수 있음)
+    const same = ([x, y]: [string, string]) => (x === a && y === b) || (x === b && y === a)
+    const has = design.edges.some(same)
+    setDesign({ ...design, edges: has ? design.edges.filter((e) => !same(e)) : [...design.edges, [a, b]] })
+    setSelEdge(null)
     say(has ? '연결을 지웠어요.' : `${nodeName(a)} → ${nodeName(b)} 연결`)
   }
 
@@ -140,7 +157,10 @@ export function Designer({ project, design, setDesign, peeked, onPeek, simRuns, 
             toggleEdge(from, n.id)
             setFrom(null)
           }
-        } else if (!n.fixed) setSelNode((s) => (s === n.id ? null : n.id))
+        } else {
+          setSelEdge(null)
+          if (!n.fixed) setSelNode((s) => (s === n.id ? null : n.id))
+        }
       }
     }
     window.addEventListener('pointermove', onMove, { passive: false })
@@ -162,6 +182,7 @@ export function Designer({ project, design, setDesign, peeked, onPeek, simRuns, 
       return
     }
     setSelNode(null)
+    setSelEdge(null)
   }
 
   const onNodePointerDown = (e: React.PointerEvent, node: PNode) => {
@@ -189,6 +210,7 @@ export function Designer({ project, design, setDesign, peeked, onPeek, simRuns, 
     setConnect(false)
     setFrom(null)
     setSelNode(null)
+    setSelEdge(null)
     setToast(null)
     onSimRun()
     setSim({ idx: 0, done: false })
@@ -225,11 +247,11 @@ export function Designer({ project, design, setDesign, peeked, onPeek, simRuns, 
       <div className="d-help">
         {connect
           ? from
-            ? `"${nodeName(from)}"과 연결할 대상을 누르세요. 같은 대상을 다시 연결하면 지워져요.`
-            : '연결 모드: 출발 요소를 누르세요.'
+            ? `"${nodeName(from)}"과 연결할 대상을 누르세요. 이미 연결된 대상을 누르면 선이 지워지고, × 를 누르면 서비스가 삭제돼요.`
+            : '연결 모드: 출발 요소를 누르세요. 선을 누르면 × 로 지울 수 있어요.'
           : armed
             ? `"${svc(armed).name}"을(를) 놓을 영역을 누르세요.`
-            : selNode
+            : selNode || selEdge
             ? '× 를 누르면 삭제돼요. 빈 곳을 누르면 선택이 풀려요.'
             : '서비스를 끌어다 놓거나, 누른 뒤 영역을 누르세요. 배치한 아이콘을 한 번 더 누르면 × 로 삭제할 수 있어요.'}
       </div>
@@ -287,6 +309,16 @@ export function Designer({ project, design, setDesign, peeked, onPeek, simRuns, 
           onZoneTap={sim ? undefined : onZoneTap}
           onNodePointerDown={onNodePointerDown}
           onNodeDelete={sim ? undefined : remove}
+          selectedEdge={sim ? null : selEdge}
+          onEdgeTap={
+            sim || armed
+              ? undefined
+              : (a, b) => {
+                  setSelNode(null)
+                  setSelEdge((k) => (k === `${a}|${b}` ? null : `${a}|${b}`))
+                }
+          }
+          onEdgeDelete={sim ? undefined : removeEdge}
           grade={grade}
         />
       </div>
@@ -313,7 +345,7 @@ export function Designer({ project, design, setDesign, peeked, onPeek, simRuns, 
             <button
               key={`${a}-${b}`}
               className={`edge-chip ${grade?.wrongEdges.has(`${a}|${b}`) ? 'wrong' : ''}`}
-              onClick={() => toggleEdge(a, b)} title="눌러서 삭제">
+              onClick={() => removeEdge(a, b)} title="눌러서 삭제">
               {nodeName(a)} → {nodeName(b)} <b>×</b>
             </button>
           ))}
@@ -347,6 +379,7 @@ export function Designer({ project, design, setDesign, peeked, onPeek, simRuns, 
                 setFrom(null)
                 setArmed(null)
                 setSelNode(null)
+                setSelEdge(null)
               }}
             >
               🔗 {connect ? '연결 끝내기' : '연결'}
@@ -500,7 +533,7 @@ export function Designer({ project, design, setDesign, peeked, onPeek, simRuns, 
                   <button
                     className="ghost"
                     onClick={() => {
-                      if (design.nodes.length === 0) return say('먼저 서비스를 배치해 보세요.')
+                      if (design.nodes.length === 0) return setNotice('아직 배치된 서비스가 없어요.')
                       setGrading(true)
                       setShowAnswer(false)
                       setConnect(false)
@@ -516,6 +549,18 @@ export function Designer({ project, design, setDesign, peeked, onPeek, simRuns, 
                 </div>
               </>
             )}
+          </div>
+        </div>
+      )}
+
+      {notice && (
+        <div className="modal notice" onClick={() => setNotice(null)}>
+          <div className="modal-body notice-body" onClick={(e) => e.stopPropagation()}>
+            <div className="notice-ico">ℹ️</div>
+            <p>{notice}</p>
+            <button className="primary" onClick={() => setNotice(null)}>
+              확인
+            </button>
           </div>
         </div>
       )}

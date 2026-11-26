@@ -10,6 +10,10 @@ export const LEVEL_GOLD: Record<1 | 2 | 3, number> = { 1: 100, 2: 200, 3: 300 }
 export const STAR_BONUS = 20
 /** 다른 날 다시 푼 "복습"은 기본 골드의 절반 */
 export const REVIEW_RATE = 0.5
+/** 클리어한 프로젝트의 퀴즈·구성도만 다시 하기: 기본 골드에 곱하는 비율(전체 수행보다 작게) */
+export const PRACTICE_RATE = { quiz: 0.2, design: 0.3 } as const
+/** 다시 하기 중 해설·정답을 보면 보상 절반 */
+export const PRACTICE_PEEK_RATE = 0.5
 /** 하루 첫 접속 출석 보상 */
 export const ATTEND_GOLD = 10
 

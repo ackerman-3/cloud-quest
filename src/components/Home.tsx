@@ -13,6 +13,9 @@ import {
   affinity,
   bestStars,
   completionGold,
+  isCleared,
+  practiceGold,
+  type PracticeKind,
   goldBalance,
   doneProjects,
   exportJson,
@@ -104,6 +107,7 @@ export function Home({
   setProgress,
   session,
   onStart,
+  onPractice,
   onResume,
   onReset,
   onGift,
@@ -114,6 +118,7 @@ export function Home({
   setProgress: (p: Progress) => void
   session: Session | null
   onStart: (id: string) => void
+  onPractice: (id: string, kind: PracticeKind) => void
   onResume: () => void
   onReset: () => void
   onGift: () => void
@@ -137,7 +142,12 @@ export function Home({
   const nextL = LEVELS[unlocked]
   const nextNeed = nextL ? nextL.need - doneProjects(progress, unlocked).length : 0
   const sessionProject = session ? PROJECTS.find((p) => p.id === session.projectId) : null
-  const recent = [...progress.completions].reverse().slice(0, 8)
+  const recent = [
+    ...progress.completions.map((c) => ({ ts: c.ts, c, x: null })),
+    ...(progress.practices ?? []).map((x) => ({ ts: x.ts, c: null, x })),
+  ]
+    .sort((a, b) => b.ts - a.ts)
+    .slice(0, 8)
   const doneIds = new Set(progress.completions.map((c) => c.projectId))
   const nextRec = [...PROJECTS].sort((a, b) => a.level - b.level).find((p) => p.level <= unlocked && !doneIds.has(p.id))
   const newEp = FRIENDS.some((f) => f.episodes.some((e) => affinity(progress, f.id) >= e.need && !(progress.seenEpisodes ?? []).includes(e.id)))
@@ -323,8 +333,9 @@ export function Home({
             const stars = bestStars(progress, p.id)
             const locked = p.level > unlocked
             const doneToday = progress.completions.some((c) => c.projectId === p.id && c.date === today())
+            const cleared = !locked && isCleared(progress, p.id)
             return (
-              <li key={p.id}>
+              <li key={p.id} className={cleared ? 'cleared' : ''}>
                 <button className="pitem" disabled={locked} onClick={() => onStart(p.id)}>
                   <div className="p-top">
                     <b>{p.title}</b>
@@ -346,6 +357,13 @@ export function Home({
                     <span>📘</span>
                     <small>개념보기</small>
                   </button>
+                )}
+                {cleared && (
+                  <div className="practice-row">
+                    <span>다시 하기</span>
+                    <button onClick={() => onPractice(p.id, 'quiz')}>🧠 퀴즈</button>
+                    <button onClick={() => onPractice(p.id, 'design')}>🧩 구성도</button>
+                  </div>
                 )}
               </li>
             )
@@ -384,17 +402,28 @@ export function Home({
         <h2>최근 완료 내역</h2>
         {recent.length === 0 && <p className="muted">아직 완료한 프로젝트가 없어요. 신입 프로젝트부터 시작해 보세요.</p>}
         <ul className="history">
-          {recent.map((c) => {
-            const p = PROJECTS.find((x) => x.id === c.projectId)
+          {recent.map(({ ts, c, x }) => {
+            const p = PROJECTS.find((y) => y.id === (c ?? x)!.projectId)
+            if (x)
+              return (
+                <li key={ts}>
+                  <span className="h-date">{x.date.slice(5).replace('-', '.')}</span>
+                  <span className="h-title">{p?.title}</span>
+                  <span className="pill tiny">{x.kind === 'quiz' ? '퀴즈만' : '구성도만'}</span>
+                  {x.peeked && <span className="pill warn tiny">해설 참고</span>}
+                  {practiceGold(x) > 0 && <span className="h-gold">+{practiceGold(x)}{GOLD}</span>}
+                </li>
+              )
+            const cc = c!
             return (
-              <li key={c.ts}>
-                <span className="h-date">{c.date.slice(5).replace('-', '.')}</span>
+              <li key={ts}>
+                <span className="h-date">{cc.date.slice(5).replace('-', '.')}</span>
                 <span className="h-title">{p?.title}</span>
-                <span className="stars">{'★'.repeat(c.stars)}</span>
-                {c.peeked && <span className="pill warn tiny">해설 참고</span>}
-                {!c.counted && <span className="pill tiny">같은 날 반복</span>}
-                {c.counted && c.review && <span className="pill tiny">복습</span>}
-                {completionGold(c) > 0 && <span className="h-gold">+{completionGold(c)}{GOLD}</span>}
+                <span className="stars">{'★'.repeat(cc.stars)}</span>
+                {cc.peeked && <span className="pill warn tiny">해설 참고</span>}
+                {!cc.counted && <span className="pill tiny">같은 날 반복</span>}
+                {cc.counted && cc.review && <span className="pill tiny">복습</span>}
+                {completionGold(cc) > 0 && <span className="h-gold">+{completionGold(cc)}{GOLD}</span>}
               </li>
             )
           })}

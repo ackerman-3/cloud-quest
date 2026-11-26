@@ -1,7 +1,7 @@
 import { useLayoutEffect, useRef, useState } from 'react'
 import type { Box, Design, DesignSpec, PNode } from '../types'
 import { CAT_COLOR, svc } from '../data/services'
-import { allEdges, allNodes, type Grade } from '../engine'
+import { allEdges, allNodes, isLoose, looseZone, type Grade } from '../engine'
 import { Glyph, hasGlyph } from './glyphs'
 
 // AWS 공식 아키텍처 아이콘(Architecture-Service-Icons_07312025, 48px). 파일 이름 = 서비스 id
@@ -61,6 +61,10 @@ interface Props {
   onNodeDelete?: (id: string) => void
   /** 채점 결과(틀린 곳 빨간색 표시) */
   grade?: Grade | null
+  /** 선 누르기(선택) · 선택된 선 키("a|b") · 선 삭제 */
+  onEdgeTap?: (a: string, b: string) => void
+  selectedEdge?: string | null
+  onEdgeDelete?: (a: string, b: string) => void
 }
 
 interface Pt {
@@ -101,13 +105,26 @@ export function Canvas(p: Props) {
           right: nr.right - base.left,
         }
       })
+      // 서비스가 삭제돼 한쪽 끝만 남은 선: 삭제된 서비스가 있던 영역의 빈자리(+)에 끝을 둔다
+      for (const id of new Set(edges.flat().filter(isLoose))) {
+        const box = el.querySelector<HTMLElement>(`[data-box="${looseZone(id)}"]`)
+        if (!box) continue
+        const hint = box.querySelector<HTMLElement>(':scope > .box-nodes > .drop-hint')
+        const r = (hint ?? box).getBoundingClientRect()
+        const x = r.left - base.left + (hint ? r.width / 2 : 24)
+        const y = r.top - base.top + (hint ? r.height / 2 : r.height / 2)
+        next[id] = { x, y, ih: 5, iw: 5, top: y - 5, bottom: y + 5, left: x - 5, right: x + 5 }
+      }
       setPos(next)
     }
     measure()
     const ro = new ResizeObserver(measure)
     ro.observe(el)
     return () => ro.disconnect()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [p.design, p.spec])
+  const fixedEdgeCount = p.spec.fixedEdges?.length ?? 0
+  const mids: Record<string, Pt> = {}
 
   const renderNode = (n: PNode) => {
     const isDead = p.dead?.has(n.id)
@@ -196,7 +213,7 @@ export function Canvas(p: Props) {
       {renderBox(p.spec.layout)}
       <svg className="edges">
         <defs>
-          {(['base', 'ok', 'bad', 'dead', 'hl', 'wrong', 'miss'] as const).map((k) => (
+          {(['base', 'ok', 'bad', 'dead', 'hl', 'wrong', 'miss', 'loose'] as const).map((k) => (
             <marker
               key={k}
               id={`arrow-${k}`}
@@ -222,14 +239,33 @@ export function Canvas(p: Props) {
           const d = roundPath(pts, 7)
           const dead = p.dead?.has(a) || p.dead?.has(b)
           const hl = !p.flow && !!p.highlightNode && (a === p.highlightNode || b === p.highlightNode)
-          const wrong = !p.flow && !!p.grade?.wrongEdges.has(`${a}|${b}`)
-          const state = dead ? 'dead' : p.flow ? p.flow : wrong ? 'wrong' : hl ? 'hl' : 'base'
+          const key = `${a}|${b}`
+          const wrong = !p.flow && !!p.grade?.wrongEdges.has(key)
+          const loose = isLoose(a) || isLoose(b)
+          const sel = !p.flow && p.selectedEdge === key
+          const state = dead ? 'dead' : p.flow ? p.flow : sel ? 'hl' : wrong ? 'wrong' : hl ? 'hl' : loose ? 'loose' : 'base'
+          const E = pts[pts.length - 1]
+          const tappable = !!p.onEdgeTap && i >= fixedEdgeCount
+          if (tappable) mids[key] = midpoint(pts)
           const dots = p.flow === 'ok' && !dead ? Math.min(3, Math.max(1, Math.round((p.load ?? 1) / 3))) : 0
           return (
             <g key={`${a}-${b}-${i}`} className={`edge-g ${state}`}>
               <path d={d} className="edge-halo" />
               <path d={d} className={`edge ${state}`} markerEnd={`url(#arrow-${state})`} />
               <circle cx={S.x} cy={S.y} r={3} className={`edge-start ${state}`} />
+              {isLoose(a) && <circle cx={S.x} cy={S.y} r={5} className="loose-end" />}
+              {isLoose(b) && <circle cx={E.x} cy={E.y} r={5} className="loose-end" />}
+              {tappable && (
+                <path
+                  d={d}
+                  className="edge-hit"
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    p.onEdgeTap!(a, b)
+                  }}
+                />
+              )}
               {Array.from({ length: dots }).map((_, k) => (
                 <circle key={k} r={3} className="packet">
                   <animateMotion dur={`${1.1 + (i % 3) * 0.2}s`} begin={`${k * 0.35}s`} repeatCount="indefinite" path={d} />
@@ -253,8 +289,40 @@ export function Canvas(p: Props) {
             )
           })}
       </svg>
+      {p.selectedEdge && p.onEdgeDelete && mids[p.selectedEdge] && (
+        <button
+          type="button"
+          className="edge-del"
+          aria-label="선 삭제"
+          style={{ left: mids[p.selectedEdge].x, top: mids[p.selectedEdge].y }}
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.stopPropagation()
+            const [a, b] = p.selectedEdge!.split('|')
+            p.onEdgeDelete!(a, b)
+          }}
+        >
+          ×
+        </button>
+      )}
     </div>
   )
+}
+
+/** 꺾은선의 길이 기준 가운데 점 */
+function midpoint(pts: Pt[]): Pt {
+  let total = 0
+  for (let i = 1; i < pts.length; i++) total += Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y)
+  let half = total / 2
+  for (let i = 1; i < pts.length; i++) {
+    const l = Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y)
+    if (half <= l && l > 0) {
+      const t = half / l
+      return { x: pts[i - 1].x + (pts[i].x - pts[i - 1].x) * t, y: pts[i - 1].y + (pts[i].y - pts[i - 1].y) * t }
+    }
+    half -= l
+  }
+  return pts[0]
 }
 
 /** 꺾은선 꼭짓점을 반지름 r로 둥글게 */
