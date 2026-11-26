@@ -23,7 +23,7 @@ import {
 } from '../store'
 import type { Line } from '../types'
 import { Sprite } from './Sprite'
-import { useZoom, ZOOM_MAX, ZOOM_MIN } from './useZoom'
+import { useZoom, ZOOM_MAX } from './useZoom'
 
 const fmt = (n: number) => n.toLocaleString('ko-KR')
 const pick = <T,>(a: T[]) => a[Math.floor(Math.random() * a.length)]
@@ -127,7 +127,36 @@ export function Office({
   const [bought, setBought] = useState<Furniture | null>(null)
   const [toast, setToast] = useState<string | null>(null)
   const sheetRef = useRef<HTMLDivElement>(null)
-  const zoom = useZoom()
+  // 아래 패널(꾸미기·상점)을 끌어내려 접으면 사무실 장면이 남은 화면을 가득 채운다
+  const [full, setFull] = useState(false)
+  const [fullH, setFullH] = useState(0)
+  const zoom = useZoom(ROOM.W / ROOM.H, full)
+  const drag = useRef<number | null>(null)
+  useEffect(() => {
+    if (!full) return
+    const measure = () => {
+      const el = zoom.box.current
+      const nav = document.querySelector('.bottom-nav') as HTMLElement | null
+      if (!el) return
+      const top = el.getBoundingClientRect().top + window.scrollY
+      setFullH(Math.max(240, window.innerHeight - top - (nav?.offsetHeight ?? 64) - 52))
+    }
+    window.scrollTo(0, 0)
+    measure()
+    window.addEventListener('resize', measure)
+    return () => window.removeEventListener('resize', measure)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [full])
+  const swipe = {
+    onTouchStart: (e: React.TouchEvent) => (drag.current = e.touches[0].clientY),
+    onTouchEnd: (e: React.TouchEvent) => {
+      if (drag.current == null) return
+      const dy = e.changedTouches[0].clientY - drag.current
+      drag.current = null
+      if (!full && dy > 40) setFull(true)
+      if (full && dy < -30) setFull(false)
+    },
+  }
   const zs = zoom.view.s
   const toTop = () => sheetRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
 
@@ -351,11 +380,17 @@ export function Office({
         </span>
       </header>
 
-      <div className={`o-scene ${decor ? 'decor' : ''} ${zs > 1.001 ? 'zoomed' : ''}`} ref={zoom.box} style={{ aspectRatio: `${ROOM.W} / ${ROOM.H}` }}>
+      <div
+        className={`o-scene ${decor ? 'decor' : ''} ${zoom.pannable ? 'zoomed' : ''} ${full ? 'full' : ''}`}
+        ref={zoom.box}
+        style={full ? { height: fullH || undefined } : { aspectRatio: `${ROOM.W} / ${ROOM.H}` }}
+      >
         <div
           className="o-world"
           style={
             {
+              width: zoom.base.w || '100%',
+              height: zoom.base.h || '100%',
               backgroundImage: `url(${roomBg})`,
               transform: `translate(${zoom.view.x}px, ${zoom.view.y}px) scale(${zs})`,
               '--zs': zs,
@@ -368,16 +403,16 @@ export function Office({
           <button onClick={zoom.zoomIn} disabled={zs >= ZOOM_MAX - 0.01} aria-label="확대">
             +
           </button>
-          <button onClick={zoom.zoomOut} disabled={zs <= ZOOM_MIN + 0.01} aria-label="축소">
+          <button onClick={zoom.zoomOut} disabled={zs <= zoom.minS + 0.01} aria-label="축소">
             −
           </button>
-          {zs > 1.001 && (
+          {Math.abs(zs - 1) > 0.001 && (
             <button onClick={zoom.reset} aria-label="원래 크기" className="o-zoom-reset">
               ⤢
             </button>
           )}
         </div>
-        {!decor && !sel && zs <= 1.001 && <div className="o-hint">👆 동료를 눌러 이야기해 보세요</div>}
+        {!decor && !sel && Math.abs(zs - 1) <= 0.001 && <div className="o-hint">👆 동료를 눌러 이야기해 보세요</div>}
         {decor && (
           <div className="o-decor-bar">
             <span>{dSlot ? `${slot?.name}에 둘 아이템을 고르세요` : '바꿀 자리를 누르세요'}</span>
@@ -388,8 +423,19 @@ export function Office({
         )}
       </div>
 
-      {!decor && (
+      {!decor && full && (
+        <button className="o-dock" onClick={() => setFull(false)} {...swipe}>
+          <i className="o-dock-grip" />
+          <span>︿ 꾸미기 · 아이템 상점 열기</span>
+        </button>
+      )}
+
+      {!decor && !full && (
         <section className="o-actions">
+          <button className="o-panel-grip" onClick={() => setFull(true)} {...swipe} aria-label="아래로 내려 사무실만 보기">
+            <i />
+            <small>아래로 내려 사무실만 보기</small>
+          </button>
           <div className="o-btns">
             <button className="ghost" onClick={() => startDecor()}>
               🛋️ 꾸미기
@@ -533,7 +579,7 @@ export function Office({
                   {BONDS.slice(1).map((b, i) => {
                     const ep = f.episodes[i]
                     const ok = pts >= b.min
-                    const prop = b.min === RELATION_PROP_NEED ? MEMENTOS.find((m) => m.friend === sel) : undefined
+                    const prop = b.min === RELATION_PROP_NEED ? MEMENTOS.find((m) => m.friend === sel && !m.episode) : undefined
                     return (
                       <li key={b.name} className={ok ? 'ok' : ''}>
                         <div className="o-track-head">
@@ -541,9 +587,15 @@ export function Office({
                           <small>팀워크 {b.min}</small>
                         </div>
                         {ep && (
-                          <button className="o-ep" disabled={!ok} onClick={() => onEpisode(sel, ep)}>
-                            🎬 {ok ? ep.title : '동료 에피소드'}
-                            <small>{ok ? (seen.has(ep.id) ? '다시 보기' : 'NEW') : '🔒'}</small>
+                          <button className={`o-ep ${seen.has(ep.id) ? 'done' : ''}`} disabled={!ok} onClick={() => onEpisode(sel, ep)}>
+                            <span className="o-ep-main">
+                              <b>🎬 {ok ? ep.title : '동료 에피소드'}</b>
+                              <small>
+                                {ep.topic} · 보상: {ep.reward.kind} 「{ep.reward.name}」
+                              </small>
+                            </span>
+                            <PixelArt name={ep.reward.art} className={`o-ep-art ${seen.has(ep.id) ? '' : 'dim'}`} />
+                            <small className="o-ep-state">{ok ? (seen.has(ep.id) ? '✓ 다시 보기' : 'NEW') : '🔒'}</small>
                           </button>
                         )}
                         {prop && (

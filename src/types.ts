@@ -132,6 +132,14 @@ export interface Line {
   text: string
 }
 
+/** 대화 중 선택지: 고른 쪽의 대사가 이어진 뒤 원래 대화로 돌아온다(어느 쪽을 골라도 끝까지 볼 수 있음) */
+export interface Choice {
+  choice: { label: string; lines: Line[] }[]
+}
+
+export type TalkItem = Line | Choice
+export const isChoice = (x: TalkItem): x is Choice => 'choice' in x
+
 export type Step =
   | { t: 'talk'; scene: SceneName; lines: Line[] }
   | { t: 'quiz'; scene: SceneName; quiz: Quiz }

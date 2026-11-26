@@ -1,3 +1,6 @@
+import { FRIENDS } from './rewards'
+import { CHARS } from './characters'
+
 // 사무실 탭: 장면 배치(동료·가구 자리), 가구 상점 품목, 성과 기념품
 // 장면은 아이소메트릭 방(scripts/office-room.py가 그린 room.png)이고, 위치는 방 바닥 좌표(x: 오른쪽 벽 방향, y: 왼쪽 벽 방향, z: 높이)다.
 // 가구 그림은 같은 스크립트가 만든 src/assets/office/*.png, 기념품 그림은 officeArt.ts(scripts/office-art.py)를 쓴다.
@@ -101,6 +104,8 @@ export interface Memento {
   how: string
   /** 동료 관계 보상이면 그 동료 id */
   friend?: string
+  /** 동료 에피소드 보상이면 그 에피소드 id */
+  episode?: string
 }
 
 // 받는 조건 판정은 store.ts의 earnedMementos()
@@ -117,6 +122,11 @@ export const MEMENTOS: Memento[] = [
   { id: 'r_peer', name: '멀티 AZ 덤벨 세트', art: 'r_peer', how: '니콜라스와 "믿음직한 동료" 달성', friend: 'peer' },
   { id: 'team_photo', name: '팀 사진 액자', art: 'team_photo', how: '세 동료 모두와 "믿음직한 동료" 달성' },
 ]
+
+// 동료 에피소드 보상(끝까지 본 에피소드마다 하나). 받는 조건 판정은 store.ts earnedMementos()
+for (const f of FRIENDS)
+  for (const e of f.episodes)
+    MEMENTOS.push({ id: e.reward.id, name: e.reward.name, art: e.reward.art, how: `${CHARS[f.id].name} 에피소드 「${e.title}」 완료`, friend: f.id, episode: e.id })
 
 export const memento = (id: string) => MEMENTOS.find((m) => m.id === id)
 

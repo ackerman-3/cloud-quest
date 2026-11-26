@@ -402,6 +402,46 @@ for n,f in (('i_home',i_home),('i_laptop',i_laptop),('i_book',i_book),('i_chart'
     icon(n,f)
 icon('i_cloud',i_cloud,19,14); icon('i_coin',i_coin,13,13)
 
+
+# ── 동료 에피소드 보상(사진·소품·액자) ──
+def photo(name, frame, bg, ground, draw):
+    cv=Cv(16,14); cv.rect(0,0,16,13,frame); cv.rect(1,1,14,11,bg); cv.rect(1,8,14,4,ground); draw(cv)
+    cv.rect(6,13,4,1,'d'); cv.outline(); save(name,cv)
+def fig(cv,x,y,hair,top):
+    cv.rect(x,y,2,2,'C'); cv.hline(x,y-1,2,hair); cv.rect(x,y+2,2,3,top)
+def ep_lead1(cv):     # 프린터 앞 인증샷: 프린터 + 종이 든 팀장
+    cv.rect(2,5,6,5,'g'); cv.hline(2,5,6,'w'); cv.rect(3,4,4,1,'w'); cv.hline(3,7,4,'e')
+    fig(cv,10,4,'K','B'); cv.rect(12,6,2,2,'i')
+def ep_senior1(cv):   # 점심 산책길: 남산 타워 + 길
+    cv.ell(10,8,5,3,'a'); cv.vline(10,2,5,'S'); cv.rect(9,4,3,1,'S'); cv.line(3,12,6,8,'o'); cv.line(4,12,7,8,'o')
+    fig(cv,3,5,'c','g')
+def ep_peer1(cv):     # 멀티 AZ 머리: 핑크·파랑 머리 둘
+    for (x,h) in ((4,'p'),(9,'B')):
+        cv.rect(x,3,3,2,h); cv.rect(x,5,3,2,'C'); cv.set(x,5,h); cv.set(x+2,5,h); cv.rect(x,7,3,4,'e')
+def cert(name, seal, body):
+    cv=Cv(16,14); cv.rect(0,0,16,13,'n'); cv.rect(1,1,14,11,'w'); body(cv)
+    cv.ell(12.5,9.5,2,2,seal); cv.set(12,9,'z'); cv.rect(6,13,4,1,'d'); cv.outline(); save(name,cv)
+def b_check(cv):
+    for y in (3,6,9): cv.set(3,y,'m'); cv.set(4,y+1,'m'); cv.set(5,y,'m'); cv.hline(7,y,5,'G')
+def b_title(cv):
+    cv.hline(3,3,10,'n'); cv.hline(4,5,8,'G'); cv.hline(4,7,6,'G')
+def notebook(name, cover, band, sticker):
+    cv=Cv(14,14); cv.rect(1,1,11,12,cover); cv.vline(1,1,12,band); cv.vline(2,1,12,band)
+    cv.rect(12,2,1,10,'w'); cv.rect(5,4,5,3,'w'); cv.hline(6,5,3,'G'); sticker(cv); cv.outline(); save(name,cv)
+def st_coffee(cv): cv.rect(6,9,3,3,'C'); cv.set(9,10,'C'); cv.hline(6,9,3,'c')
+def st_succ(cv): cv.ell(7.5,10,2,1.6,'a','A','M'); cv.rect(6,11,3,2,'x')
+def badge(name):
+    cv=Cv(12,15); cv.line(3,0,5,5,'p'); cv.line(4,0,6,5,'p'); cv.line(8,0,6,5,'B'); cv.line(7,0,5,5,'B')
+    cv.ell(6,9.5,5,5,'p'); cv.rect(6,5,5,10,'.')
+    for j in range(5,15):
+        for i in range(6,12):
+            if ((i+.5-6)/5)**2+((j+.5-9.5)/5)**2<=1: cv.set(i,j,'B')
+    cv.ell(6,9.5,2.6,2.6,'w'); cv.set(5,9,'r'); cv.set(6,9,'r'); cv.set(6,10,'r'); cv.set(7,9,'y')
+    cv.outline(); save(name,cv)
+photo('ep_lead1','O','C','W',ep_lead1); photo('ep_senior1','O','j','l',ep_senior1); photo('ep_peer1','n','M','W',ep_peer1)
+cert('ep_lead2','m',b_check); cert('ep_senior3','y',b_title); cert('ep_peer3','p',b_title)
+notebook('ep_lead3','c','D',st_coffee); notebook('ep_senior2','m','t',st_succ); badge('ep_peer2')
+
 used=set(''.join(''.join(r) for r in ART.values()))-{'.'}
 out=['// 자동 생성 파일: scripts/office-art.py 를 고친 뒤 python3 scripts/office-art.py 로 다시 만드세요.',
      'export const ART_PAL: Record<string, string> = '+json.dumps({k:v for k,v in PAL.items() if k in used},ensure_ascii=False),

@@ -161,14 +161,20 @@ export default function App() {
 
   if (view.v === 'episode') {
     const back = () => {
-      setProgress(markEpisodeSeen(progress, view.ep.id))
       setOfficeFriend(view.friend)
       goTab('office')
+    }
+    // 끝까지 보면 완료로 기록하고 보상(소품·사진·액자)을 알린다. 중간에 돌아가면 기록하지 않는다
+    const done = () => {
+      const first = !(progress.seenEpisodes ?? []).includes(view.ep.id)
+      setProgress(markEpisodeSeen(progress, view.ep.id))
+      setNotice(first ? `🎁 ${view.ep.reward.kind} 「${view.ep.reward.name}」을(를) 받았어요. 사무실 선반에 전시해 보세요.` : `「${view.ep.title}」 다시 보기를 마쳤어요.`)
+      back()
     }
     return (
       <div className="play episode">
         <EpisodeHeader title={view.ep.title} name={CHARS[view.friend].name} onBack={back} />
-        <Talk scene={view.ep.scene} lines={view.ep.lines} onDone={back} />
+        <Talk key={view.ep.id} scene={view.ep.scene} lines={view.ep.lines} onDone={done} noSkip />
       </div>
     )
   }

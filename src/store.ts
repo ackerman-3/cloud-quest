@@ -32,7 +32,7 @@ export interface Progress {
   purchases?: PurchaseLog[]
   /** 사무실: 자리별 배치(자리 id → 가구·기념품 id, null은 비움). 없는 자리는 기본 배치 */
   placed?: Record<string, string | null>
-  /** 본 특별 에피소드 id */
+  /** 끝까지 본 동료 에피소드 id(예전 '특별 에피소드' 기록을 그대로 이어서 씀) */
   seenEpisodes?: string[]
   /** 클리어한 프로젝트의 퀴즈·구성도만 다시 한 기록(완료 수·별·승급에는 반영 안 함) */
   practices?: Practice[]
@@ -387,7 +387,8 @@ export function earnedMementos(p: Progress) {
     r_peer: (tw.peer ?? 0) >= RELATION_PROP_NEED,
     team_photo: FRIENDS.every((f) => (tw[f.id] ?? 0) >= RELATION_PROP_NEED),
   }
-  return new Set(MEMENTOS.filter((m) => ok[m.id]).map((m) => m.id))
+  const seen = new Set(p.seenEpisodes ?? [])
+  return new Set(MEMENTOS.filter((m) => (m.episode ? seen.has(m.episode) : ok[m.id])).map((m) => m.id))
 }
 
 export function giveGift(p: Progress, to: string, item: string, cost: number, points: number): Progress {

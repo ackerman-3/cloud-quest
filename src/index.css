@@ -2645,3 +2645,36 @@ details summary {
 .note-search input { flex: 1; min-width: 0; border: none; outline: none; background: transparent; font: inherit; font-size: 16px; }
 .note-search button { border: none; background: #e8edf5; width: 26px; height: 26px; min-height: 0; padding: 0; border-radius: 50%; font-size: 16px; color: #5d6b7e; }
 .note-hits { margin: 4px 2px 0; }
+
+/* 사무실 머리글: 안전 영역 여백은 body에서 이미 주므로 한 번만 */
+.office-head { padding: 10px 16px 10px; align-items: center; }
+.office-head h1 { font-size: 21px; }
+.office-head p { font-size: 12.5px; margin-top: 1px; }
+.office-head .o-gold { font-size: 14px; padding: 4px 11px; }
+/* 방 그림: 틀 안에서 위치·크기를 직접 지정(사무실만 보기에서 가로로 넘칠 수 있음) */
+.o-world { inset: auto; left: 0; top: 0; }
+.o-scene.full { aspect-ratio: auto; }
+/* 아래 패널 접기 손잡이 */
+.o-panel-grip { display: grid; justify-items: center; gap: 3px; width: 100%; min-height: 0; padding: 2px 0 4px; margin-top: -4px; border: none; background: transparent; color: #8a94a6; touch-action: none; }
+.o-panel-grip i { width: 44px; height: 5px; border-radius: 9px; background: #cfd6e2; }
+.o-panel-grip small { font-size: 11px; font-weight: 700; }
+.o-dock { display: grid; justify-items: center; gap: 4px; width: calc(100% - 24px); margin: -8px 12px 0; position: relative; z-index: 2; min-height: 44px; padding: 6px 0 8px; border: 1.5px solid #dfe5ef; border-radius: 16px; background: #fff; box-shadow: 0 -2px 10px rgba(19, 33, 60, 0.08); color: #13213c; font-weight: 800; font-size: 13.5px; touch-action: none; }
+.o-dock-grip { width: 44px; height: 5px; border-radius: 9px; background: #cfd6e2; }
+
+/* 동료 에피소드 */
+.o-quirk { color: #6a5a2a !important; background: #fff8e2; border-radius: 8px; padding: 4px 8px; line-height: 1.45; word-break: keep-all; margin-top: 3px; }
+.o-ep { display: grid; grid-template-columns: 1fr auto; grid-template-rows: auto auto; gap: 2px 10px; align-items: center; text-align: left; }
+.o-ep-main { display: grid; gap: 2px; min-width: 0; }
+.o-ep-main b { font-size: 13.5px; }
+.o-ep-main small { font-size: 11.5px !important; color: #5d6b7e !important; font-weight: 600 !important; word-break: keep-all; }
+.o-ep-art { grid-row: 1 / span 2; grid-column: 2; width: 32px; height: auto; }
+.o-ep-art.dim { filter: grayscale(1) opacity(0.4); }
+.o-ep-state { grid-column: 1; font-size: 11px; font-weight: 800; color: #2f6bff; }
+.o-ep.done .o-ep-state { color: #157a65; }
+.o-ep:disabled .o-ep-art { display: none; }
+/* 대화 선택지 */
+.choice-box { cursor: default; }
+.choice-list { display: grid; gap: 8px; margin-top: 8px; }
+.choice-list button { text-align: left; min-height: 48px; padding: 10px 14px; border-radius: 12px; border: 2px solid #2f6bff; background: #f2f6ff; color: #13213c; font-weight: 800; font-size: 15px; box-shadow: 0 3px 0 #c9d8ff; }
+.choice-list button::before { content: '▶ '; color: #2f6bff; font-size: 12px; }
+.choice-list button:active { transform: translateY(2px); box-shadow: 0 1px 0 #c9d8ff; }
