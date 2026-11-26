@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { Design, PNode, Project } from '../types'
 import { Canvas, SvcIcon } from './Canvas'
 import { SCOPE_HINT, svc } from '../data/services'
-import { costIndex, deadSet, diffWithAnswer, findBox, gradeDesign, isLoose, looseId, runScenarios } from '../engine'
+import { costIndex, deadSet, diffWithAnswer, findBox, gradeDesign, isLoose, runScenarios } from '../engine'
 
 interface Props {
   project: Project
@@ -76,16 +76,11 @@ export function Designer({ project, design, setDesign, peeked, onPeek, simRuns, 
     setDesign({ ...design, nodes: design.nodes.map((n) => (n.id === node.id ? { ...n, zone: zoneId } : n)) })
   }
 
-  // 서비스 삭제: 반대쪽이 남아 있는 선은 남기고(끝만 빈자리로), 양쪽이 모두 지워진 선만 지운다
+  // 서비스 삭제: 그 서비스에 붙은 선도 함께 지운다(예전 버전에서 남은 끊긴 선도 정리)
   const remove = (id: string) => {
-    const node = design.nodes.find((n) => n.id === id)
-    if (!node) return
-    const loose = looseId(node.zone, id)
     setDesign({
       nodes: design.nodes.filter((n) => n.id !== id),
-      edges: design.edges
-        .map(([a, b]) => [a === id ? loose : a, b === id ? loose : b] as [string, string])
-        .filter(([a, b]) => !(isLoose(a) && isLoose(b))),
+      edges: design.edges.filter(([a, b]) => a !== id && b !== id && !isLoose(a) && !isLoose(b)),
     })
     setSelNode(null)
     setSelEdge(null)

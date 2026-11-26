@@ -136,7 +136,7 @@ export function Canvas(p: Props) {
       isDead ? 'dead' : '',
       p.grade?.wrongNodes.has(n.id) ? 'wrong' : '',
     ].join(' ')
-    const canDel = !!p.onNodeDelete && !n.fixed && p.selectedNode === n.id
+    const canDel = !!p.onNodeDelete && !n.fixed && (p.selectedNode === n.id || p.connectFrom === n.id)
     return (
       <div
         key={n.id}

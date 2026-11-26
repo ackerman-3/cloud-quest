@@ -21,6 +21,14 @@ export function findBox(root: Box, id: string): Box | null {
   return null
 }
 
+/**
+ * 서비스를 삭제해도 반대쪽 서비스가 남아 있으면 선은 남긴다.
+ * 이때 삭제된 쪽 끝은 "~영역id~원래노드id"로 바꿔 둔다(그 영역 빈자리에 선 끝을 그림).
+ */
+export const looseId = (zone: string, nodeId: string) => `~${zone}~${nodeId}`
+export const isLoose = (id: string) => id.startsWith('~')
+export const looseZone = (id: string) => id.split('~')[1]
+
 export function allNodes(spec: DesignSpec, d: Design): PNode[] {
   return [...spec.fixed.map((f) => ({ ...f, fixed: true })), ...d.nodes]
 }
