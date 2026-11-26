@@ -417,9 +417,9 @@ def ep_lead1(cv):     # 마감 전날 밤의 커피: 밤 창문 + 커피잔 세 
 def ep_senior1(cv):   # 점심 산책길: 남산 타워 + 길
     cv.ell(10,8,5,3,'a'); cv.vline(10,2,5,'S'); cv.rect(9,4,3,1,'S'); cv.line(3,12,6,8,'o'); cv.line(4,12,7,8,'o')
     fig(cv,3,5,'c','g')
-def ep_peer1(cv):     # 멀티 AZ 머리: 핑크·파랑 머리 둘
-    for (x,h) in ((4,'p'),(9,'B')):
-        cv.rect(x,3,3,2,h); cv.rect(x,5,3,2,'C'); cv.set(x,5,h); cv.set(x+2,5,h); cv.rect(x,7,3,4,'e')
+def ep_peer1(cv):     # 점심 봇의 첫 국밥: 팀 넷 + 김 나는 국밥
+    for (x,h,t) in ((2,'K','B'),(5,'c','g'),(9,'p','e'),(12,'q','n')): fig(cv,x,3,h,t)
+    cv.rect(5,9,6,2,'c'); cv.hline(4,9,8,'X'); cv.hline(6,8,4,'C'); cv.set(6,7,'i'); cv.set(9,6,'i')
 def cert(name, seal, body):
     cv=Cv(16,14); cv.rect(0,0,16,13,'n'); cv.rect(1,1,14,11,'w'); body(cv)
     cv.ell(12.5,9.5,2,2,seal); cv.set(12,9,'z'); cv.rect(6,13,4,1,'d'); cv.outline(); save(name,cv)
