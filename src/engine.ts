@@ -206,3 +206,95 @@ export function diffWithAnswer(spec: DesignSpec, d: Design) {
     extraEdges: minus(me, ae).map(edgeName),
   }
 }
+
+/**
+ * 채점: 내 설계를 정답과 비교해 화면에 표시할 정보를 만든다.
+ * - wrongNodes: 정답에 없는 배치(서비스@영역 기준)인 내 노드 id
+ * - wrongEdges: 정답에 없는 내 연결("a|b", 내 설계의 방향 그대로)
+ * - missingNodes: 정답에는 있는데 내 설계에 없는 서비스와 놓여야 할 영역
+ * - missingEdges: 빠진 연결. 양 끝이 내 설계에 있으면 ids로 점선을 그릴 수 있다
+ */
+export function gradeDesign(spec: DesignSpec, d: Design) {
+  const fixedIds = new Set(spec.fixed.map((f) => f.id))
+  const keyOf = (design: Design) => {
+    const m = new Map<string, string>()
+    for (const f of spec.fixed) m.set(f.id, f.id)
+    for (const n of design.nodes) m.set(n.id, `${n.service}@${n.zone}`)
+    return m
+  }
+  const ansKey = keyOf(spec.answer)
+  const myKey = keyOf(d)
+  const inc = (m: Map<string, number>, k: string) => m.set(k, (m.get(k) ?? 0) + 1)
+  const take = (m: Map<string, number>, k: string) => {
+    const n = m.get(k) ?? 0
+    if (n <= 0) return false
+    m.set(k, n - 1)
+    return true
+  }
+
+  // 서비스 배치
+  const ansNodes = new Map<string, number>()
+  spec.answer.nodes.forEach((n) => inc(ansNodes, ansKey.get(n.id)!))
+  const wrongNodes = new Set<string>()
+  const matchedIds = new Map<string, string[]>() // 키 → 정답과 맞은 내 노드 id
+  for (const n of d.nodes) {
+    const k = myKey.get(n.id)!
+    if (take(ansNodes, k)) matchedIds.set(k, [...(matchedIds.get(k) ?? []), n.id])
+    else wrongNodes.add(n.id)
+  }
+  const missingNodes: { service: string; zone: string }[] = []
+  ansNodes.forEach((cnt, k) => {
+    const [service, zone] = k.split('@')
+    for (let i = 0; i < cnt; i++) missingNodes.push({ service, zone })
+  })
+
+  // 연결
+  const ek = (a: string, b: string, km: Map<string, string>) => {
+    const x = km.get(a)
+    const y = km.get(b)
+    return x && y ? [x, y].sort().join('\u0001') : null
+  }
+  const myEdges = new Map<string, number>()
+  d.edges.forEach(([a, b]) => {
+    const k = ek(a, b, myKey)
+    if (k) inc(myEdges, k)
+  })
+  const ansEdges = new Map<string, number>()
+  spec.answer.edges.forEach(([a, b]) => {
+    const k = ek(a, b, ansKey)
+    if (k) inc(ansEdges, k)
+  })
+  const wrongEdges = new Set<string>()
+  d.edges.forEach(([a, b]) => {
+    const k = ek(a, b, myKey)
+    if (!k || !take(ansEdges, k)) wrongEdges.add(`${a}|${b}`)
+  })
+  const nameOf = (k: string) => {
+    if (fixedIds.has(k)) {
+      const f = spec.fixed.find((x) => x.id === k)!
+      return f.label ?? svc(f.service).name
+    }
+    return svc(k.split('@')[0]).name
+  }
+  const idFor = (k: string) => (fixedIds.has(k) ? k : matchedIds.get(k)?.[0])
+  const missingEdges: { name: string; ids?: [string, string] }[] = []
+  spec.answer.edges.forEach(([a, b]) => {
+    const ka = ansKey.get(a)
+    const kb = ansKey.get(b)
+    const k = ek(a, b, ansKey)
+    if (!ka || !kb || !k || take(myEdges, k)) return
+    const ia = idFor(ka)
+    const ib = idFor(kb)
+    missingEdges.push({ name: `${nameOf(ka)} → ${nameOf(kb)}`, ids: ia && ib ? [ia, ib] : undefined })
+  })
+
+  return {
+    wrongNodes,
+    wrongEdges,
+    missingNodes,
+    missingEdges,
+    wrongCount: wrongNodes.size + wrongEdges.size,
+    missingCount: missingNodes.length + missingEdges.length,
+  }
+}
+export type Grade = ReturnType<typeof gradeDesign>

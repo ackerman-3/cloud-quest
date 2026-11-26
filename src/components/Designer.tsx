@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { Design, PNode, Project } from '../types'
 import { Canvas, SvcIcon } from './Canvas'
 import { SCOPE_HINT, svc } from '../data/services'
-import { costIndex, deadSet, diffWithAnswer, findBox, runScenarios } from '../engine'
+import { costIndex, deadSet, diffWithAnswer, findBox, gradeDesign, runScenarios } from '../engine'
 
 interface Props {
   project: Project
@@ -32,6 +32,7 @@ export function Designer({ project, design, setDesign, peeked, onPeek, simRuns, 
   const [sim, setSim] = useState<null | { idx: number; done: boolean }>(null)
   const [ghost, setGhost] = useState<{ x: number; y: number; service: string } | null>(null)
   const [hoverZone, setHoverZone] = useState<string | null>(null)
+  const [grading, setGrading] = useState(false)
   const drag = useRef<{ d: Drag; x0: number; y0: number; moved: boolean; canMove: boolean } | null>(null)
   const toastTimer = useRef<number>(0)
 
@@ -197,6 +198,8 @@ export function Designer({ project, design, setDesign, peeked, onPeek, simRuns, 
   const curRes = sim ? results[sim.idx] : null
   const showAll = sim?.done
 
+  const grade = grading && !sim ? gradeDesign(spec, design) : null
+
   const cost = costIndex(design)
   const refCost = costIndex(spec.answer)
 
@@ -226,8 +229,46 @@ export function Designer({ project, design, setDesign, peeked, onPeek, simRuns, 
             : '연결 모드: 출발 요소를 누르세요.'
           : armed
             ? `"${svc(armed).name}"을(를) 놓을 영역을 누르세요.`
-            : '서비스를 끌어다 놓거나, 누른 뒤 영역을 누르세요. 배치 후 [연결]로 선을 이어요.'}
+            : selNode
+            ? '× 를 누르면 삭제돼요. 빈 곳을 누르면 선택이 풀려요.'
+            : '서비스를 끌어다 놓거나, 누른 뒤 영역을 누르세요. 배치한 아이콘을 한 번 더 누르면 × 로 삭제할 수 있어요.'}
       </div>
+
+      {grade && (
+        <div className={`grade-panel ${grade.wrongCount + grade.missingCount === 0 ? 'ok' : ''}`}>
+          <div className="grade-head">
+            {grade.wrongCount + grade.missingCount === 0 ? (
+              <b>✅ 정답 구성과 같아요!</b>
+            ) : (
+              <b>
+                🔍 틀린 곳 {grade.wrongCount}개 · 빠진 것 {grade.missingCount}개
+              </b>
+            )}
+
+            <button className="ghost small" onClick={() => setGrading(false)}>
+              채점 끄기
+            </button>
+          </div>
+          {grade.wrongCount + grade.missingCount > 0 && (
+            <>
+              <p className="grade-legend">
+                <span className="lg wrong" /> 빨간색: 정답에 없는 배치·연결 (눌러서 × 삭제)
+                <br />
+                <span className="lg miss" /> 빨간 점선: 정답에 있는데 빠진 서비스·연결
+              </p>
+              {grade.missingEdges.some((m) => !m.ids) && (
+                <ul className="grade-list">
+                  {grade.missingEdges
+                    .filter((m) => !m.ids)
+                    .map((m, i) => (
+                      <li key={i}>빠진 연결: {m.name}</li>
+                    ))}
+                </ul>
+              )}
+            </>
+          )}
+        </div>
+      )}
 
       <div className="canvas-scroll">
         <Canvas
@@ -245,6 +286,8 @@ export function Designer({ project, design, setDesign, peeked, onPeek, simRuns, 
           load={cur?.load}
           onZoneTap={sim ? undefined : onZoneTap}
           onNodePointerDown={onNodePointerDown}
+          onNodeDelete={sim ? undefined : remove}
+          grade={grade}
         />
       </div>
 
@@ -261,16 +304,16 @@ export function Designer({ project, design, setDesign, peeked, onPeek, simRuns, 
           >
             여기서 연결
           </button>
-          <button className="danger small" onClick={() => remove(selNode)}>
-            삭제
-          </button>
         </div>
       )}
 
       {design.edges.length > 0 && !sim && (
         <div className="edge-list">
           {design.edges.map(([a, b]) => (
-            <button key={`${a}-${b}`} className="edge-chip" onClick={() => toggleEdge(a, b)} title="눌러서 삭제">
+            <button
+              key={`${a}-${b}`}
+              className={`edge-chip ${grade?.wrongEdges.has(`${a}|${b}`) ? 'wrong' : ''}`}
+              onClick={() => toggleEdge(a, b)} title="눌러서 삭제">
               {nodeName(a)} → {nodeName(b)} <b>×</b>
             </button>
           ))}
@@ -453,6 +496,19 @@ export function Designer({ project, design, setDesign, peeked, onPeek, simRuns, 
                     }}
                   >
                     🧩 정답 전체로 배치하기
+                  </button>
+                  <button
+                    className="ghost"
+                    onClick={() => {
+                      if (design.nodes.length === 0) return say('먼저 서비스를 배치해 보세요.')
+                      setGrading(true)
+                      setShowAnswer(false)
+                      setConnect(false)
+                      setFrom(null)
+                      setArmed(null)
+                    }}
+                  >
+                    🔍 틀린 곳 보기
                   </button>
                   <button className="primary" onClick={() => setShowAnswer(false)}>
                     내 설계로 돌아가 다시 풀기

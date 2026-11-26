@@ -1,7 +1,7 @@
 import { useLayoutEffect, useRef, useState } from 'react'
 import type { Box, Design, DesignSpec, PNode } from '../types'
 import { CAT_COLOR, svc } from '../data/services'
-import { allEdges, allNodes } from '../engine'
+import { allEdges, allNodes, type Grade } from '../engine'
 import { Glyph, hasGlyph } from './glyphs'
 
 // AWS 공식 아키텍처 아이콘(Architecture-Service-Icons_07312025, 48px). 파일 이름 = 서비스 id
@@ -57,6 +57,10 @@ interface Props {
   load?: number
   onZoneTap?: (zone: string) => void
   onNodePointerDown?: (e: React.PointerEvent, node: PNode) => void
+  /** 선택된 노드에 × 버튼을 띄우고, 누르면 호출 */
+  onNodeDelete?: (id: string) => void
+  /** 채점 결과(틀린 곳 빨간색 표시) */
+  grade?: Grade | null
 }
 
 interface Pt {
@@ -113,7 +117,9 @@ export function Canvas(p: Props) {
       p.connectFrom === n.id ? 'from' : '',
       p.selectedNode === n.id ? 'sel' : '',
       isDead ? 'dead' : '',
+      p.grade?.wrongNodes.has(n.id) ? 'wrong' : '',
     ].join(' ')
+    const canDel = !!p.onNodeDelete && !n.fixed && p.selectedNode === n.id
     return (
       <div
         key={n.id}
@@ -125,6 +131,20 @@ export function Canvas(p: Props) {
         <SvcIcon id={n.service} />
         <span className="node-label">{n.label ?? svc(n.service).name}</span>
         {isDead && <span className="node-x">✕</span>}
+        {canDel && (
+          <button
+            type="button"
+            className="node-del"
+            aria-label="삭제"
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation()
+              p.onNodeDelete!(n.id)
+            }}
+          >
+            ×
+          </button>
+        )}
       </div>
     )
   }
@@ -133,6 +153,7 @@ export function Canvas(p: Props) {
     const here = nodes.filter((n) => n.zone === b.id)
     const isZone = !!b.zone
     const down = p.failBoxes?.includes(b.id)
+    const missing = p.grade?.missingNodes.filter((m) => m.zone === b.id) ?? []
     const cls = [
       'box',
       `k-${b.kind}`,
@@ -151,9 +172,15 @@ export function Canvas(p: Props) {
       >
         {b.label && <div className="box-label">{b.label}</div>}
         {down && <div className="down-tag">장애</div>}
-        {(here.length > 0 || (isZone && p.mode === 'edit')) && (
+        {(here.length > 0 || missing.length > 0 || (isZone && p.mode === 'edit')) && (
           <div className="box-nodes">
             {here.map(renderNode)}
+            {missing.map((m, i) => (
+              <div key={`miss-${i}`} className="node missing">
+                <SvcIcon id={m.service} />
+                <span className="node-label">빠짐: {svc(m.service).name}</span>
+              </div>
+            ))}
             {isZone && p.mode === 'edit' && here.filter((n) => !n.fixed).length < (b.zone?.max ?? 3) && (
               <div className="drop-hint">{p.armed ? '여기에 배치' : '+'}</div>
             )}
@@ -169,7 +196,7 @@ export function Canvas(p: Props) {
       {renderBox(p.spec.layout)}
       <svg className="edges">
         <defs>
-          {(['base', 'ok', 'bad', 'dead', 'hl'] as const).map((k) => (
+          {(['base', 'ok', 'bad', 'dead', 'hl', 'wrong', 'miss'] as const).map((k) => (
             <marker
               key={k}
               id={`arrow-${k}`}
@@ -195,7 +222,8 @@ export function Canvas(p: Props) {
           const d = roundPath(pts, 7)
           const dead = p.dead?.has(a) || p.dead?.has(b)
           const hl = !p.flow && !!p.highlightNode && (a === p.highlightNode || b === p.highlightNode)
-          const state = dead ? 'dead' : p.flow ? p.flow : hl ? 'hl' : 'base'
+          const wrong = !p.flow && !!p.grade?.wrongEdges.has(`${a}|${b}`)
+          const state = dead ? 'dead' : p.flow ? p.flow : wrong ? 'wrong' : hl ? 'hl' : 'base'
           const dots = p.flow === 'ok' && !dead ? Math.min(3, Math.max(1, Math.round((p.load ?? 1) / 3))) : 0
           return (
             <g key={`${a}-${b}-${i}`} className={`edge-g ${state}`}>
@@ -210,6 +238,20 @@ export function Canvas(p: Props) {
             </g>
           )
         })}
+        {!p.flow &&
+          p.grade?.missingEdges.map(({ ids }, i) => {
+            if (!ids) return null
+            const A0 = pos[ids[0]]
+            const B0 = pos[ids[1]]
+            if (!A0 || !B0) return null
+            const d = roundPath(routeEdge(A0, B0, ids[0], ids[1], pos), 7)
+            return (
+              <g key={`miss-${i}`} className="edge-g miss">
+                <path d={d} className="edge-halo" />
+                <path d={d} className="edge miss" markerEnd="url(#arrow-miss)" />
+              </g>
+            )
+          })}
       </svg>
     </div>
   )

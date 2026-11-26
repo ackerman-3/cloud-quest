@@ -2292,3 +2292,73 @@ details summary {
 .pg-prose section { margin-bottom: 20px; }
 .pg-prose h3 { font-size: 16.5px; margin: 0 0 8px; color: #1b2333; }
 .pg-prose p { font-size: 15px; line-height: 1.8; color: #333c4d; margin: 0 0 10px; word-break: keep-all; }
+
+/* ── 아이콘 다시 누르면 뜨는 삭제(×) 버튼 ── */
+.node-del {
+  position: absolute;
+  top: -8px;
+  right: 9px;
+  z-index: 6;
+  width: 22px;
+  height: 22px;
+  min-height: 0;
+  padding: 0;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: #e5484d;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+  animation: pop-in 0.14s ease-out;
+}
+.node-del::before { content: ''; position: absolute; inset: -8px; } /* 손가락 터치 영역 넓히기 */
+@keyframes pop-in { from { transform: scale(0.4); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+/* ── 채점: 틀린 곳 빨간색 ── */
+.node.wrong:not(.sel):not(.from) .svc-icon { outline: 2.5px solid #e5484d; outline-offset: 2px; }
+.node.wrong .node-label { color: #d12f35; }
+.node.wrong::after {
+  content: '!';
+  position: absolute;
+  top: -6px;
+  left: 10px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #e5484d;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 900;
+  display: grid;
+  place-items: center;
+}
+.node.missing { pointer-events: none; opacity: 0.75; }
+.node.missing .svc-icon { opacity: 0.45; filter: grayscale(0.5); outline: 2px dashed #e5484d; outline-offset: 2px; }
+.node.missing .node-label { color: #d12f35; font-weight: 700; }
+.edge.wrong { stroke: #e5484d; stroke-width: 2.2; }
+.edge-start.wrong { fill: #e5484d; }
+.arrow-head.wrong { fill: #e5484d; }
+.edge.miss { stroke: #e5484d; stroke-width: 1.8; stroke-dasharray: 5 4; opacity: 0.8; }
+.arrow-head.miss { fill: #e5484d; opacity: 0.8; }
+.edge-chip.wrong { border-color: #e5484d; color: #d12f35; background: #fff1f1; }
+
+.grade-panel {
+  margin: 0 12px 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1.5px solid #f3b4b6;
+  background: #fff6f6;
+  font-size: 13px;
+}
+.grade-panel.ok { border-color: #9fdcc4; background: #f0fbf6; }
+.grade-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.grade-head b { font-size: 14px; }
+.grade-legend { margin: 6px 0 0; color: #5a6472; line-height: 1.6; }
+.grade-legend .lg { display: inline-block; width: 18px; height: 0; vertical-align: middle; margin-right: 4px; border-top: 2.5px solid #e5484d; }
+.grade-legend .lg.miss { border-top-style: dashed; }
+.grade-list { margin: 6px 0 0; padding-left: 18px; color: #d12f35; }
