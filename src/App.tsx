@@ -2,10 +2,9 @@ import { useEffect, useState } from 'react'
 import { Home } from './components/Home'
 import { Play } from './components/Play'
 import { Sprite } from './components/Sprite'
-import { Gifts, EpisodeHeader } from './components/Gifts'
+import { Office, EpisodeHeader, PixelArt } from './components/Office'
 import { Talk } from './components/Talk'
 import { Study } from './components/Study'
-import { PinLock } from './components/PinLock'
 import { ATTEND_GOLD, FRIENDS, GOLD, PRACTICE_RATE, type Episode } from './data/rewards'
 import { PROJECTS, LEVELS } from './data/projects'
 import { CHARS } from './data/characters'
@@ -33,7 +32,7 @@ import {
   type Session,
 } from './store'
 
-type Tab = 'home' | 'projects' | 'study' | 'gift' | 'records'
+type Tab = 'home' | 'projects' | 'study' | 'office' | 'records'
 
 type View =
   | { v: 'home' }
@@ -48,10 +47,9 @@ export default function App() {
   const [view, setView] = useState<View>({ v: 'home' })
   const [notice, setNotice] = useState<string | null>(null)
   const [tab, setTab] = useState<Tab>('home')
-  const [giftFriend, setGiftFriend] = useState<string | undefined>()
-  const [giftOpen, setGiftOpen] = useState(false)
+  const [officeFriend, setOfficeFriend] = useState<string | undefined>()
   const goTab = (t: Tab) => {
-    if (t !== 'gift') setGiftOpen(false) // 선물 탭을 벗어나면 다시 잠금
+    if (t !== 'office') setOfficeFriend(undefined)
     setTab(t)
     setView({ v: 'home' })
     window.scrollTo(0, 0)
@@ -79,7 +77,6 @@ export default function App() {
     attend()
     const onVis = () => {
       if (document.visibilityState === 'visible') attend()
-      else setGiftOpen(false) // 앱을 내리면 선물 메뉴 다시 잠금
     }
     document.addEventListener('visibilitychange', onVis)
     return () => document.removeEventListener('visibilitychange', onVis)
@@ -165,8 +162,8 @@ export default function App() {
   if (view.v === 'episode') {
     const back = () => {
       setProgress(markEpisodeSeen(progress, view.ep.id))
-      setGiftFriend(view.friend)
-      goTab('gift')
+      setOfficeFriend(view.friend)
+      goTab('office')
     }
     return (
       <div className="play episode">
@@ -279,14 +276,12 @@ export default function App() {
   return (
     <div className="with-nav">
       {toast}
-      {tab === 'gift' && !giftOpen ? (
-        <PinLock onUnlock={() => setGiftOpen(true)} />
-      ) : tab === 'gift' ? (
-        <Gifts
-          key={giftFriend}
+      {tab === 'office' ? (
+        <Office
+          key={officeFriend}
           progress={progress}
           setProgress={setProgress}
-          initial={giftFriend}
+          initialFriend={officeFriend}
           onEpisode={(friend, ep) => {
             setView({ v: 'episode', friend, ep })
             window.scrollTo(0, 0)
@@ -298,7 +293,7 @@ export default function App() {
         <Home
           section={tab}
           onTab={goTab}
-          onGift={() => goTab('gift')}
+          onGift={() => goTab('office')}
           progress={progress}
           setProgress={setProgress}
           session={session}
@@ -318,14 +313,14 @@ export default function App() {
             ['home', '🏠', '홈'],
             ['projects', '📋', '프로젝트'],
             ['study', '📘', '학습'],
-            ['gift', '🎁', '선물'],
+            ['office', 'desk', '사무실'],
             ['records', '📅', '기록'],
           ] as const
         ).map(([id, icon, label]) => (
           <button key={id} className={tab === id ? 'on' : ''} onClick={() => goTab(id)} aria-current={tab === id ? 'page' : undefined}>
-            <span className="bn-icon">{icon}</span>
+            <span className="bn-icon">{icon === 'desk' ? <PixelArt name="icon_desk" className="bn-pix" /> : icon}</span>
             <span>{label}</span>
-            {id === 'gift' && newEp && <i className="bn-dot" />}
+            {id === 'office' && newEp && <i className="bn-dot" />}
           </button>
         ))}
       </nav>

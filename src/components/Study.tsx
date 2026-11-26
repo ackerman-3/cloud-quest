@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import { NOTES, type Note } from '../data/notes'
 import { PROJECTS, LEVELS } from '../data/projects'
 import { Canvas, SvcIcon } from './Canvas'
+import { svc } from '../data/services'
 
 /** 설명 문단을 문장 단위로 나눈다 (첫 문장 = 요약) */
 const sentences = (t: string) =>
@@ -291,7 +292,14 @@ export function NoteSheet({ note, onClose }: { note: Note; onClose: () => void }
 
 export function Study({ onStart, unlocked }: { onStart: (id: string) => void; unlocked: number }) {
   const [open, setOpen] = useState<string | null>(null)
+  const [q, setQ] = useState('')
   const note = NOTES.find((n) => n.id === open)
+  // 검색: 노트 제목·설명·개념 이름·설명·서비스 이름에서 찾는다(띄어쓰기·대소문자 무시)
+  const norm = (t: string) => t.toLowerCase().replace(/\s+/g, '')
+  const key = norm(q)
+  const hits = NOTES.map((n, i) => ({ n, i })).filter(
+    ({ n }) => !key || [n.title, n.sub, ...n.concepts.flatMap((c) => [c.term, c.desc, c.svc ? svc(c.svc).name : '']), ...n.keywords.flatMap((k) => [k.when, k.then])].some((t) => norm(t).includes(key)),
+  )
 
   useEffect(() => {
     window.scrollTo(0, 0)
@@ -333,8 +341,18 @@ export function Study({ onStart, unlocked }: { onStart: (id: string) => void; un
           <h2>개념 노트</h2>
         </div>
         <p className="muted small">프로젝트를 풀기 전에 읽어 두면 구성도와 문제가 훨씬 쉽게 보여요<br />처음이라면 「구성도 읽는 법」부터 보세요</p>
+        <label className="note-search">
+          <span aria-hidden>🔍</span>
+          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="개념 또는 AWS 서비스 검색 (예: NAT, 캐시)" enterKeyHint="search" />
+          {q && (
+            <button onClick={() => setQ('')} aria-label="검색어 지우기">
+              ×
+            </button>
+          )}
+        </label>
+        {key && <p className="muted small note-hits">{hits.length ? `${hits.length}개 노트에서 찾았어요` : `"${q}"에 맞는 노트가 없어요`}</p>}
         <ul className="note-list">
-          {NOTES.map((n, i) => (
+          {hits.map(({ n, i }) => (
             <li key={n.id}>
               <button onClick={() => setOpen(n.id)}>
                 <span className="nl-emoji">{n.emoji}</span>

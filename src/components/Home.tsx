@@ -7,11 +7,14 @@ import { Sprite } from './Sprite'
 import { STUDY_URL } from '../data/links'
 import { FRIENDS, GOLD } from '../data/rewards'
 import officeImg from '../assets/office.webp'
+import { PixelArt } from './Office'
+import { memento } from '../data/office'
 
 const PAGE_SIZE = 5
 import {
   affinity,
   bestStars,
+  earnedMementos,
   completionGold,
   isCleared,
   practiceGold,
@@ -99,6 +102,59 @@ function MiniWeek({ p }: { p: Progress }) {
         </div>
       ))}
     </div>
+  )
+}
+
+/** 승급 보상: 승급·올 클리어 때 받는 기념품과 남은 조건 */
+function RankRewards({ progress, onOpen }: { progress: Progress; onOpen: () => void }) {
+  const earned = earnedMementos(progress)
+  const totalDone = doneProjects(progress).length
+  const rows = [
+    { m: 'm_junior', title: LEVELS[1].name + ' 승급', cur: doneProjects(progress, 1).length, need: LEVELS[1].need, unit: `${LEVELS[0].diff} 프로젝트` },
+    { m: 'm_senior', title: LEVELS[2].name + ' 승급', cur: doneProjects(progress, 2).length, need: LEVELS[2].need, unit: `${LEVELS[1].diff} 프로젝트` },
+    { m: 'm_all', title: '모든 프로젝트 완료', cur: totalDone, need: PROJECTS.length, unit: '전체 프로젝트' },
+  ]
+  const nextIdx = rows.findIndex((r) => !earned.has(r.m))
+  return (
+    <section className="card rank-rewards">
+      <div className="card-head">
+        <h2>승급 보상</h2>
+        <button className="ghost small" onClick={onOpen}>
+          사무실에 전시
+        </button>
+      </div>
+      <ul>
+        {rows.map((r, i) => {
+          const m = memento(r.m)!
+          const got = earned.has(r.m)
+          const left = Math.max(0, r.need - r.cur)
+          return (
+            <li key={r.m} className={`${got ? 'got' : ''} ${i === nextIdx ? 'next' : ''}`}>
+              <span className="rr-art">
+                <PixelArt name={m.art} />
+              </span>
+              <span className="rr-text">
+                <small>{r.title}</small>
+                <b>{m.name}</b>
+                {got ? (
+                  <small className="rr-ok">✓ 받았어요</small>
+                ) : (
+                  <>
+                    <div className="bar thin">
+                      <i style={{ width: `${Math.min(100, (r.cur / r.need) * 100)}%` }} />
+                    </div>
+                    <small>
+                      {r.unit} {Math.min(r.cur, r.need)}/{r.need}건 · {left}건 남음
+                    </small>
+                  </>
+                )}
+              </span>
+              {i === nextIdx && <span className="rr-next">다음 보상</span>}
+            </li>
+          )
+        })}
+      </ul>
+    </section>
   )
 }
 
@@ -203,7 +259,7 @@ export function Home({
             )}
           </div>
           <div className="hero-actions">
-            <button className="gold-pill big" onClick={onGift} aria-label="보유 골드, 선물하기로 이동">
+            <button className="gold-pill big" onClick={onGift} aria-label="보유 골드, 사무실로 이동">
               💰 {goldBalance(progress).toLocaleString('ko-KR')}
               {GOLD}
             </button>
@@ -276,12 +332,14 @@ export function Home({
         <LevelBars progress={progress} />
       </section>
 
+      <RankRewards progress={progress} onOpen={onGift} />
+
       {newEp && (
         <button className="gift-entry" onClick={onGift}>
           <span className="ge-icon">💌</span>
           <span className="ge-text">
-            <b>새 특별 에피소드가 열려 있어요</b>
-            <small>선물 탭에서 확인해 보세요</small>
+            <b>새 동료 에피소드가 열려 있어요</b>
+            <small>사무실 탭에서 동료를 눌러 확인해 보세요</small>
           </span>
           <span className="ge-new">NEW</span>
         </button>
@@ -338,6 +396,9 @@ export function Home({
               <li key={p.id} className={cleared ? 'cleared' : ''}>
                 <button className="pitem" disabled={locked} onClick={() => onStart(p.id)}>
                   <div className="p-top">
+                    <span className="p-ava">
+                      <Sprite cfg={CHARS[p.client]} className="p-ava-spr" />
+                    </span>
                     <b>{p.title}</b>
                     <span className="stars">{stars ? '★'.repeat(stars) + '☆'.repeat(3 - stars) : ''}</span>
                   </div>

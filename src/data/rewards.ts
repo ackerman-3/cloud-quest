@@ -1,4 +1,5 @@
-// 보상(골드)·선물·호감도·특별 에피소드 데이터
+// 보상(골드)·간식·팀워크·동료 에피소드 데이터
+// 저장 데이터 호환: 간식 기록은 Progress.gifts, 팀워크 점수 기준은 예전 호감도 수치를 그대로 이어서 쓴다.
 import type { Line, SceneName } from '../types'
 
 /** 화폐 단위 */
@@ -22,8 +23,10 @@ export interface GiftItem {
   emoji: string
   name: string
   price: number
-  /** 기본 호감도 */
+  /** 기본 팀워크 */
   points: number
+  /** 예전 '선물' 시절 품목. 기록 계산에만 쓰고 간식 목록에는 내지 않음 */
+  legacy?: boolean
 }
 
 export const GIFTS: GiftItem[] = [
@@ -31,26 +34,34 @@ export const GIFTS: GiftItem[] = [
   { id: 'sports', emoji: '🥤', name: '스포츠음료', price: 70, points: 7 },
   { id: 'snack', emoji: '🍪', name: '편의점 간식 꾸러미', price: 80, points: 8 },
   { id: 'energy', emoji: '⚡', name: '에너지 드링크', price: 120, points: 12 },
+  { id: 'tea', emoji: '🍵', name: '따뜻한 허브티', price: 100, points: 10 },
   { id: 'tangerine', emoji: '🍊', name: '제주 감귤', price: 150, points: 15 },
   { id: 'dessert', emoji: '🍰', name: '카페 디저트 세트', price: 180, points: 18 },
-  { id: 'plant', emoji: '🪴', name: '미니 다육이 화분', price: 200, points: 20 },
+  { id: 'plant', emoji: '🪴', name: '미니 다육이 화분', price: 200, points: 20, legacy: true },
   { id: 'chicken', emoji: '🍗', name: '치킨 기프티콘', price: 250, points: 25 },
-  { id: 'book', emoji: '📘', name: '클라우드 기술 서적', price: 300, points: 30 },
+  { id: 'book', emoji: '📘', name: '클라우드 기술 서적', price: 300, points: 30, legacy: true },
   { id: 'beans', emoji: '🫘', name: '스페셜티 원두', price: 450, points: 45 },
-  { id: 'pen', emoji: '🖋️', name: '만년필', price: 700, points: 70 },
-  { id: 'ticket', emoji: '🎫', name: '공연 티켓 두 장', price: 900, points: 90 },
+  { id: 'pen', emoji: '🖋️', name: '만년필', price: 700, points: 70, legacy: true },
+  { id: 'ticket', emoji: '🎫', name: '공연 티켓 두 장', price: 900, points: 90, legacy: true },
 ]
 
-/** 좋아하는 선물은 호감도 2배, 싫어하는 선물은 절반 */
+/** 사무실에서 나눌 수 있는 간식 */
+export const SNACKS = GIFTS.filter((g) => !g.legacy)
+
+/** 팀워크: 이야기하기(동료별 하루 1번), 함께한 프로젝트 완료(완료 수에 반영된 1회마다) */
+export const TALK_POINTS = 3
+export const PROJECT_POINTS = 3
+
+/** 좋아하는 간식은 팀워크 2배, 싫어하는 간식은 절반 */
 export const LIKE_RATE = 2
 export const DISLIKE_RATE = 0.5
 
-/** 호감도 단계 */
+/** 팀워크 단계(예전 호감도 구간 0·50·150·300을 그대로 대응) */
 export const BONDS = [
-  { min: 0, name: '어색한 사이' },
-  { min: 50, name: '편한 동료' },
-  { min: 150, name: '믿는 동료' },
-  { min: 300, name: '든든한 단짝' },
+  { min: 0, name: '첫 인사' },
+  { min: 50, name: '익숙한 동료' },
+  { min: 150, name: '믿음직한 동료' },
+  { min: 300, name: '최고의 파트너' },
 ]
 
 export interface Episode {
@@ -63,10 +74,14 @@ export interface Episode {
 
 export interface Friend {
   id: string // characters.ts의 캐릭터 id
+  /** 전문 분야(프로필 표시) */
+  specialty: string
   hint: string // 취향 힌트
   likes: string[]
   dislikes: string[]
-  greet: string[] // 호감도 단계별 인사(BONDS 순서)
+  greet: string[] // 팀워크 단계별 인사(BONDS 순서)
+  /** 이야기하기: 업무·협업·회사 일상 대화. 할 때마다 다음 대화로 넘어간다 */
+  talks: Line[][]
   react: { like: string[]; normal: string[]; dislike: string[] }
   /** 선물별 전용 반응(있으면 우선) */
   special?: Record<string, string>
@@ -76,6 +91,7 @@ export interface Friend {
 export const FRIENDS: Friend[] = [
   {
     id: 'lead',
+    specialty: '아키텍처 설계 · 고객 제안',
     hint: '회의 때마다 직접 내린 커피를 들고 와요. 커피엔 꼭 달달한 디저트를 곁들인대요.',
     likes: ['americano', 'beans', 'dessert'],
     dislikes: ['energy'],
@@ -83,11 +99,43 @@ export const FRIENDS: Friend[] = [
       '무슨 일이에요? 프로젝트 질문이면 언제든 와요.',
       '왔어요? 오늘 진행은 어때요?',
       '마침 커피 내리던 참이에요. 한 잔 할래요?',
-      '오늘도 같이 잘해 봅시다. 요즘 제일 든든한 사람이 누군지 알죠?',
+      '오늘도 같이 잘해 봅시다. 요즘 우리 팀에서 제일 든든한 사람이 누군지 알죠?',
+    ],
+    talks: [
+      [
+        { who: 'lead', text: '이번 주 고객 미팅, 요구사항 정리 잘 됐어요. 비용 얘기가 나왔을 때 바로 예약 인스턴스를 꺼낸 거 좋았어요.' },
+        { who: 'me', text: '팀장님이 지난번에 비용부터 물어보라고 하셔서요.' },
+        { who: 'lead', text: '그 습관이면 어느 프로젝트에서도 통해요.' },
+      ],
+      [
+        { who: 'lead', text: '제안서 쓸 때 구성도부터 그려요, 글부터 써요?' },
+        { who: 'me', text: '구성도부터요. 그려 봐야 빠진 게 보여서요.' },
+        { who: 'lead', text: '저도요. 잘 그린 구성도 한 장이 슬라이드 열 장보다 설득력 있어요.' },
+      ],
+      [
+        { who: 'lead', text: '아침에 원두를 새로 갈았어요. 이번 건 산미가 좀 있어요.' },
+        { who: 'me', text: '회의실까지 향이 나던데요.' },
+        { who: 'lead', text: '회의 전에 한 잔씩 돌릴게요. 다들 표정이 한결 부드러워지거든요.' },
+      ],
+      [
+        { who: 'lead', text: '장애 보고서는 누구 탓을 쓰는 문서가 아니에요. 같은 일이 다시 안 생기게 하는 문서예요.' },
+        { who: 'me', text: '원인, 영향, 재발 방지 순서로 쓰면 될까요?' },
+        { who: 'lead', text: '좋아요. 타임라인은 분 단위로 적어 둬요.' },
+      ],
+      [
+        { who: 'lead', text: '다음 달 팀 워크숍 장소 투표 올렸어요. 꼭 눌러 줘요.' },
+        { who: 'me', text: '바다 쪽에 한 표 할게요.' },
+        { who: 'lead', text: '니콜라스는 벌써 바다에 세 번 눌렀더라고요. 한 번만 반영돼요.' },
+      ],
+      [
+        { who: 'lead', text: '고객이 "무조건 가장 안전하게"라고 하면 뭐부터 물어봐요?' },
+        { who: 'me', text: '예산이랑, 서비스가 멈춰도 괜찮은 시간이요.' },
+        { who: 'lead', text: '정답. 안전에도 가격이 있다는 걸 고객과 같이 정해야 해요.' },
+      ],
     ],
     react: {
       like: ['…이거 어떻게 알았어요? 진짜 좋아하는 거예요. 고마워요.', '취향을 정확히 짚었네요. 고객 요구사항만 잘 파악하는 게 아니었군요.'],
-      normal: ['고마워요. 잘 쓸게요.', '신경 써 줘서 고마워요. 덕분에 오후도 힘내겠네요.'],
+      normal: ['고마워요. 잘 먹을게요.', '신경 써 줘서 고마워요. 덕분에 오후도 힘내겠네요.'],
       dislike: ['고마워요. 그런데 카페인은 커피로 충분해서요… 팀원들이랑 나눌게요.', '마음은 고마워요. 그런데 이건 니콜라스가 더 좋아하겠는데요.'],
     },
     special: {
@@ -160,24 +208,59 @@ export const FRIENDS: Friend[] = [
   },
   {
     id: 'senior',
-    hint: '말수는 적지만 늘 옆에서 챙겨 줘요. 책과 다육이, 귤을 좋아하고 같이 공부하는 시간을 아껴요.',
-    likes: ['plant', 'book', 'tangerine'],
+    specialty: '네트워크 · 보안',
+    hint: '말수는 적지만 늘 옆에서 챙겨 줘요. 따뜻한 차와 귤, 커피에 곁들이는 디저트를 좋아해요.',
+    likes: ['tea', 'tangerine', 'dessert'],
     dislikes: ['energy'],
     greet: [
       '아, 왔어요? 천천히 말해 줘요. 같이 보면 금방 풀릴 거예요.',
       '어제 그 구성도 다시 봤어요. 많이 늘었더라고요.',
       '오늘 하나 같이 공부해 볼래요? 저도 아직 헷갈리는 부분이 있어서요.',
-      '…요즘은 당신이랑 같이 일하는 시간이 제일 좋아요. 우리 둘 다 많이 컸죠.',
+      '요즘은 당신이랑 같이 설계하는 시간이 제일 든든해요. 우리 둘 다 많이 컸죠.',
+    ],
+    talks: [
+      [
+        { who: 'senior', text: '보안 그룹에 0.0.0.0/0으로 열어 둔 규칙 있으면 같이 봐요.' },
+        { who: 'me', text: 'SSH 하나 열어 둔 게 있어요…' },
+        { who: 'senior', text: 'Session Manager로 접속하면 22번은 닫아도 돼요. 오늘 같이 바꿔요.' },
+      ],
+      [
+        { who: 'senior', text: '서브넷 IP 계산은 이제 익숙해졌어요?' },
+        { who: 'me', text: '/24면 256개, AWS가 5개를 예약해서 251개요.' },
+        { who: 'senior', text: '완벽해요. 처음엔 저도 손가락으로 셌어요.' },
+      ],
+      [
+        { who: 'senior', text: '점심 먹고 잠깐 걸을래요? 오늘 하늘이 맑아요.' },
+        { who: 'me', text: '좋아요. 남산 타워 보이는 쪽으로요.' },
+        { who: 'senior', text: '걸으면서 VPC 피어링이랑 Transit Gateway 차이 얘기해 줄게요. 생각보다 재밌어요.' },
+      ],
+      [
+        { who: 'senior', text: '고객사 방화벽 담당자가 우리 출발지 IP 목록을 달래요. NAT 게이트웨이 IP 확인해 줄래요?' },
+        { who: 'me', text: 'AZ마다 하나씩이라 탄력적 IP가 두 개예요.' },
+        { who: 'senior', text: '고마워요. 이렇게 꼼꼼하게 챙겨 주는 게 제일 큰 도움이에요.' },
+      ],
+      [
+        { who: 'senior', text: '요즘 공부하는 거 있어요?' },
+        { who: 'me', text: 'S3 스토리지 클래스 외우고 있어요.' },
+        { who: 'senior', text: '외우기보다 "얼마나 자주 꺼내 보나"로 정리해 봐요. 그러면 안 헷갈려요.' },
+      ],
+      [
+        { who: 'senior', text: '창가 다육이 "오로라"가 새잎을 냈어요.' },
+        { who: 'me', text: '축하해요! 이름처럼 복제본이 생긴 건가요?' },
+        { who: 'senior', text: '…그런 셈이죠. 옆에 작은 잎이 하나 더 났거든요.' },
+      ],
     ],
     react: {
       like: ['…고마워요. 이런 거 받으면 저도 더 잘하고 싶어져요.', '기억해 줬네요. 조용히, 오래 아끼면서 쓸게요.'],
-      normal: ['고마워요. 마음 써 줘서요.', '이런 거 안 줘도 괜찮은데… 그래도 기분 좋네요. 고마워요.'],
+      normal: ['고마워요. 같이 먹어요.', '이런 거 안 챙겨도 괜찮은데… 그래도 기분 좋네요. 고마워요.'],
       dislike: ['고마워요. 그런데 카페인이 많으면 밤에 잠을 잘 못 자서요… 마음만 감사히 받을게요.', '고마워요. 이건 니콜라스가 보면 엄청 좋아하겠다. 같이 나눠 줘도 될까요?'],
     },
     special: {
       plant: '다육이네요. 천천히 자라는 게 꼭 우리 같아요. 창가에 두고, 같이 크는 거 지켜볼게요.',
       book: '이 책, 읽고 싶었어요. 다 읽으면 빌려줄게요. 그다음에 같이 이야기해요.',
       tangerine: '귤… 고마워요. 겨울엔 이게 제일 좋아요. 하나 까 줄게요, 같이 먹어요.',
+      tea: '허브티네요. 오후에 이거 한 잔이면 머리가 맑아져요. 같이 한 잔 해요.',
+      dessert: '디저트까지요? 회의 끝나고 다 같이 나눠 먹어요. 팀장님 커피랑 잘 어울리겠다.',
     },
     episodes: [
       {
@@ -243,18 +326,51 @@ export const FRIENDS: Friend[] = [
   },
   {
     id: 'peer',
+    specialty: '서버리스 · 자동화',
     hint: '먹는 거라면 뭐든 좋아하고 점심시간엔 헬스장으로 뛰어가요. 쓴 커피는 질색이래요.',
     likes: ['snack', 'sports', 'chicken'],
     dislikes: ['americano'],
     greet: [
       '어, 동기! 뭐 필요한 거 있어?',
       '왔어? 나 방금 퀴즈 하나 맞혔다. 칭찬해 줘.',
-      '야, 오늘 점심 뭐 먹을래? 네가 골라.',
-      '내 최애 동기 왔다! 오늘도 같이 달리자.',
+      '오늘 점심 뭐 먹을래? 네가 골라.',
+      '내 최고의 동기 왔다! 오늘도 같이 달리자.',
+    ],
+    talks: [
+      [
+        { who: 'peer', text: '동기야, Lambda 콜드 스타트 줄이는 법 알아?' },
+        { who: 'me', text: '프로비저닝된 동시성 쓰면 되잖아.' },
+        { who: 'peer', text: '오, 바로 나오네. 오늘 음료는 내가 산다. 스포츠음료로.' },
+      ],
+      [
+        { who: 'peer', text: '배포 스크립트 하나 만들었는데 봐 줄래? 버튼 하나면 다 올라가.' },
+        { who: 'me', text: '롤백은 돼?' },
+        { who: 'peer', text: '…롤백. 지금 바로 추가할게.' },
+      ],
+      [
+        { who: 'peer', text: '점심에 헬스장 갔다가 EventBridge 스케줄 아이디어가 떠올랐어.' },
+        { who: 'me', text: '운동하다가?' },
+        { who: 'peer', text: '응. 스쿼트 세면서 cron 식을 세니까 머리에 쏙 들어오더라.' },
+      ],
+      [
+        { who: 'peer', text: '어제 고객 미팅에서 내가 SQS 설명했는데 다들 고개 끄덕였어!' },
+        { who: 'me', text: '어떻게 설명했는데?' },
+        { who: 'peer', text: '대기 번호표라고 했지. 번호표를 뽑아 두면 손님이 몰려도 순서대로 처리되잖아.' },
+      ],
+      [
+        { who: 'peer', text: '이번 주 수요일 스터디 주제 정했어. "장애 났을 때 제일 먼저 볼 지표".' },
+        { who: 'me', text: '난 ALB 5xx 오류부터 볼래.' },
+        { who: 'peer', text: '좋아, 나는 Lambda 오류율. 지는 사람이 간식 쏘기!' },
+      ],
+      [
+        { who: 'peer', text: '워크숍 바다로 가면 서핑 배울 거야.' },
+        { who: 'me', text: '넘어지면?' },
+        { who: 'peer', text: '재시도하면 되지. 지수 백오프로 천천히 일어나기.' },
+      ],
     ],
     react: {
       like: ['헐, 대박! 이거 완전 내 취향이잖아. 너 나 너무 잘 알아.', '진짜? 이걸 나한테? 오늘 운동 두 배로 한다!'],
-      normal: ['오, 고마워! 잘 먹을게. 아니, 잘 쓸게!', '와, 나 이런 거 받아도 돼? 고맙다 동기야.'],
+      normal: ['오, 고마워! 잘 먹을게!', '와, 나 이거 먹어도 돼? 고맙다 동기야.'],
       dislike: ['아… 고마워. 근데 나 쓴 커피 못 마시는 거 알지? 시럽 세 번 넣어서 마실게!', '하하, 마음은 너무 고마운데 아메리카노는 팀장님 취향 아니야?'],
     },
     special: {
@@ -313,7 +429,7 @@ export const FRIENDS: Friend[] = [
           { who: 'me', text: '게임? 어떤 식으로?' },
           { who: 'peer', text: '고객 프로젝트를 받아서 구성도를 그리고, 장애 시뮬레이션을 돌리는 거야. 통과하면 골드도 주고!' },
           { who: 'me', text: '…어디서 많이 본 것 같은데.' },
-          { who: 'peer', text: '그리고 모은 골드로 동료한테 선물도 하는 거지. 커피라든가, 에너지 드링크라든가.' },
+          { who: 'peer', text: '그리고 모은 골드로 동료들이랑 간식도 나누는 거지. 커피라든가, 에너지 드링크라든가.' },
           { who: 'me', text: '에너지 드링크는 너만 좋아하잖아.' },
           { who: 'peer', text: '그러니까 넣어야지! 개발자 특권이야.' },
           { who: 'narr', text: '둘은 하루 종일 화면 설계를 하고, 정적 파일을 S3에 올리고, CloudFront를 붙였다.' },

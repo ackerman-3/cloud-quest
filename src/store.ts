@@ -1,5 +1,6 @@
 import { PROJECTS, LEVELS } from './data/projects'
-import { ATTEND_GOLD, LEVEL_GOLD, PRACTICE_PEEK_RATE, PRACTICE_RATE, REVIEW_RATE, STAR_BONUS } from './data/rewards'
+import { ATTEND_GOLD, FRIENDS, LEVEL_GOLD, PRACTICE_PEEK_RATE, PRACTICE_RATE, PROJECT_POINTS, REVIEW_RATE, STAR_BONUS, TALK_POINTS } from './data/rewards'
+import { DEFAULT_PLACED, FURNITURE, MEMENTOS, RELATION_PROP_NEED, SLOTS } from './data/office'
 import type { Design } from './types'
 
 // ⚠️ 저장 키 이름과 형식을 바꾸면 기존 기록이 사라질 수 있습니다.
@@ -23,8 +24,14 @@ export interface Progress {
   lastBackup?: number
   /** 출석한 날짜(YYYY-MM-DD). 하루 첫 접속마다 골드 지급 */
   attendance?: string[]
-  /** 선물 기록. 골드 사용·호감도 계산의 근거 */
+  /** 간식 나누기 기록(예전 '선물'). 골드 사용·팀워크 계산의 근거 */
   gifts?: GiftLog[]
+  /** 사무실: 동료와 이야기한 기록(동료별 하루 첫 대화만 팀워크 반영) */
+  talks?: TalkLog[]
+  /** 사무실: 가구 구매 기록 */
+  purchases?: PurchaseLog[]
+  /** 사무실: 자리별 배치(자리 id → 가구·기념품 id, null은 비움). 없는 자리는 기본 배치 */
+  placed?: Record<string, string | null>
   /** 본 특별 에피소드 id */
   seenEpisodes?: string[]
   /** 클리어한 프로젝트의 퀴즈·구성도만 다시 한 기록(완료 수·별·승급에는 반영 안 함) */
@@ -40,6 +47,18 @@ export interface Practice {
   ts: number
   peeked: boolean
   counted: boolean // 같은 날 같은 프로젝트·같은 종류는 1회만 보상
+}
+
+export interface TalkLog {
+  ts: number
+  to: string
+  date: string
+}
+
+export interface PurchaseLog {
+  ts: number
+  item: string
+  cost: number
 }
 
 export interface GiftLog {
@@ -241,7 +260,7 @@ export function goldEarned(p: Progress) {
 }
 
 export function goldSpent(p: Progress) {
-  return (p.gifts ?? []).reduce((s, g) => s + g.cost, 0)
+  return (p.gifts ?? []).reduce((s, g) => s + g.cost, 0) + (p.purchases ?? []).reduce((s, x) => s + x.cost, 0)
 }
 
 export function goldBalance(p: Progress) {
@@ -255,8 +274,120 @@ export function checkIn(p: Progress): Progress | null {
   return { ...p, attendance: [...(p.attendance ?? []), d] }
 }
 
-export function affinity(p: Progress, charId: string) {
-  return (p.gifts ?? []).filter((g) => g.to === charId).reduce((s, g) => s + g.points, 0)
+// ── 사무실: 팀워크 ──
+// 팀워크 = 간식 나누기 점수 + 이야기하기(동료별 하루 1번) + 함께한 프로젝트 완료(완료 수에 반영된 1회마다)
+// 예전 호감도(간식 점수)는 그대로 이어지고, 단계 구간(0·50·150·300)도 같다.
+
+const projectCast = new Map<string, Set<string>>()
+/** 프로젝트 대화·퀴즈에 등장하는 동료 */
+export function projectFriends(projectId: string) {
+  let s = projectCast.get(projectId)
+  if (!s) {
+    s = new Set()
+    const pr = PROJECTS.find((x) => x.id === projectId)
+    for (const st of pr?.steps ?? []) {
+      const lines = (st as { lines?: { who: string }[] }).lines ?? []
+      for (const l of lines) s.add(l.who)
+      const q = (st as { quiz?: unknown }).quiz
+      for (const item of Array.isArray(q) ? q : q ? [q] : []) {
+        const who = (item as { who?: string; speaker?: string }).who ?? (item as { speaker?: string }).speaker
+        if (who) s.add(who)
+      }
+      const scene = st as { who?: string }
+      if (scene.who) s.add(scene.who)
+    }
+    projectCast.set(projectId, s)
+  }
+  return s
+}
+
+export function teamworkParts(p: Progress, charId: string) {
+  const snack = (p.gifts ?? []).filter((g) => g.to === charId).reduce((s, g) => s + g.points, 0)
+  const talkDays = new Set((p.talks ?? []).filter((t) => t.to === charId).map((t) => t.date)).size
+  const projects = p.completions.filter((c) => c.counted && projectFriends(c.projectId).has(charId)).length
+  return { snack, talk: talkDays * TALK_POINTS, project: projects * PROJECT_POINTS }
+}
+
+export function teamwork(p: Progress, charId: string) {
+  const x = teamworkParts(p, charId)
+  return x.snack + x.talk + x.project
+}
+/** 예전 이름 */
+export const affinity = teamwork
+
+export function talkedToday(p: Progress, charId: string) {
+  const d = today()
+  return (p.talks ?? []).some((t) => t.to === charId && t.date === d)
+}
+export function talkCount(p: Progress, charId: string) {
+  return (p.talks ?? []).filter((t) => t.to === charId).length
+}
+/** 이야기하기 기록. 오늘 첫 대화면 팀워크가 오른다 */
+export function logTalk(p: Progress, to: string) {
+  const gained = talkedToday(p, to) ? 0 : TALK_POINTS
+  return { next: { ...p, talks: [...(p.talks ?? []), { ts: Date.now(), to, date: today() }] }, gained }
+}
+
+// ── 사무실: 가구·기념품 ──
+export function ownsItem(p: Progress, id: string) {
+  const f = FURNITURE.find((x) => x.id === id)
+  if (f) return f.price === 0 || (p.purchases ?? []).some((x) => x.item === id)
+  return earnedMementos(p).has(id)
+}
+
+export function buyItem(p: Progress, id: string, cost: number): Progress {
+  return { ...p, purchases: [...(p.purchases ?? []), { ts: Date.now(), item: id, cost }] }
+}
+
+export function placedMap(p: Progress): Record<string, string | null> {
+  return { ...DEFAULT_PLACED, ...(p.placed ?? {}) }
+}
+
+/** 자리에 배치. 기념품을 다른 전시 자리에서 옮겨 오면 원래 자리는 비운다 */
+export function placeItem(p: Progress, slot: string, item: string | null): Progress {
+  const cur = placedMap(p)
+  const next: Record<string, string | null> = { ...cur, [slot]: item }
+  if (item)
+    for (const s of SLOTS) if (s.id !== slot && s.kind === 'display' && next[s.id] === item) next[s.id] = null
+  return { ...p, placed: next }
+}
+
+function longestStreak(p: Progress) {
+  const days = [...studyDays(p)].sort()
+  let best = 0
+  let run = 0
+  let prev: string | null = null
+  for (const d of days) {
+    if (prev) {
+      const t = new Date(prev + 'T00:00:00')
+      t.setDate(t.getDate() + 1)
+      run = today(t) === d ? run + 1 : 1
+    } else run = 1
+    best = Math.max(best, run)
+    prev = d
+  }
+  return best
+}
+
+/** 성과·관계로 받은 기념품 id */
+export function earnedMementos(p: Progress) {
+  const done = doneProjects(p).length
+  const lv = unlockedLevel(p)
+  const tw = Object.fromEntries(FRIENDS.map((f) => [f.id, teamwork(p, f.id)]))
+  const ok: Record<string, boolean> = {
+    m_first: p.completions.length > 0,
+    m_star: p.completions.some((c) => c.stars >= 3),
+    m_ten: done >= 10,
+    m_streak: longestStreak(p) >= 7,
+    m_junior: lv >= 2,
+    m_senior: lv >= 3,
+    m_all: done >= PROJECTS.length,
+    r_lead: (tw.lead ?? 0) >= RELATION_PROP_NEED,
+    r_senior: (tw.senior ?? 0) >= RELATION_PROP_NEED,
+    r_peer: (tw.peer ?? 0) >= RELATION_PROP_NEED,
+    team_photo: FRIENDS.every((f) => (tw[f.id] ?? 0) >= RELATION_PROP_NEED),
+  }
+  return new Set(MEMENTOS.filter((m) => ok[m.id]).map((m) => m.id))
 }
 
 export function giveGift(p: Progress, to: string, item: string, cost: number, points: number): Progress {
